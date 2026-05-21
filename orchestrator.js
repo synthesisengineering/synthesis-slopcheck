@@ -78,7 +78,7 @@ class AnalysisOrchestrator {
     const systemPrompt = this.buildSinglePassSystemPrompt(allSkills);
     const userPrompt = this.buildSinglePassUserPrompt({ userContent, mode });
 
-    const result = await this.callProvider({ systemPrompt, userPrompt, maxTokens: 8000 });
+    const result = await this.callProvider({ systemPrompt, userPrompt, maxTokens: 8000, userContent });
     onProgress({ stage: "complete", message: "Analysis complete." });
     return result;
   }
@@ -191,7 +191,7 @@ class AnalysisOrchestrator {
     const userPrompt = this.buildPassUserPrompt(pass, { userContent, mode });
     const maxTokens = isSynthesis ? 8000 : 4000;
 
-    return await this.callProvider({ systemPrompt, userPrompt, maxTokens });
+    return await this.callProvider({ systemPrompt, userPrompt, maxTokens, userContent });
   }
 
   buildPassSystemPrompt(pass, skillContent) {
@@ -251,13 +251,14 @@ class AnalysisOrchestrator {
       .join("\n");
   }
 
-  async callProvider({ systemPrompt, userPrompt, maxTokens }) {
+  async callProvider({ systemPrompt, userPrompt, maxTokens, userContent }) {
     return await this.provider.analyze({
       apiKey: this.apiKey,
       model: this.model,
       systemPrompt,
       userPrompt,
       maxTokens: maxTokens || 8000,
+      userContent,
     });
   }
 }

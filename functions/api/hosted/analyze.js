@@ -43,7 +43,10 @@ export async function onRequestPost(context) {
   const globalDailyBudgetCents = Math.round(
     parseFloat(env.GLOBAL_DAILY_BUDGET_USD || "25") * 100
   );
-  const maxInputChars = parseInt(env.MAX_INPUT_CHARS || "50000", 10);
+  // Cap on the USER'S CONTENT length (the pasted article/document), not on the
+  // full assembled prompt. The methodology added to the system prompt is large
+  // (~300K chars) and should not eat into the user's budget.
+  const maxUserContentChars = parseInt(env.MAX_USER_CONTENT_CHARS || "200000", 10);
   const allowedModels = (env.ALLOWED_MODELS
     ? env.ALLOWED_MODELS.split(",").map((s) => s.trim())
     : ALLOWED_MODELS_DEFAULT
@@ -56,7 +59,7 @@ export async function onRequestPost(context) {
   } catch (e) {
     return jsonResponse({ error: "Invalid JSON body." }, 400);
   }
-  const { provider, model, systemPrompt, userPrompt, maxTokens } = body || {};
+  const { provider, model, systemPrompt, userPrompt, maxTokens, userContent } = body || {};
   if (!provider || !model || !systemPrompt || !userPrompt) {
     return jsonResponse(
       { error: "provider, model, systemPrompt, userPrompt required." },
@@ -98,14 +101,18 @@ export async function onRequestPost(context) {
     );
   }
 
-  // L5 — input size cap.
-  const inputLength = (systemPrompt || "").length + (userPrompt || "").length;
-  if (inputLength > maxInputChars) {
+  // L5 — input size cap. Measures the USER'S CONTENT only (not the assembled
+  // methodology prompt). If userContent isn't provided, fall back to a generous
+  // bound on userPrompt for backwards compatibility.
+  const userContentLength = typeof userContent === "string"
+    ? userContent.length
+    : (userPrompt || "").length;
+  if (userContentLength > maxUserContentChars) {
     return jsonResponse(
       {
-        error: `Hosted-tier input exceeds ${maxInputChars.toLocaleString()} characters. Bring your own API key for longer documents, or install the skills locally.`,
-        chars: inputLength,
-        max: maxInputChars,
+        error: `Document is ${userContentLength.toLocaleString()} characters; hosted-tier cap is ${maxUserContentChars.toLocaleString()}. Bring your own API key for longer documents, or install the skills locally.`,
+        chars: userContentLength,
+        max: maxUserContentChars,
       },
       413
     );

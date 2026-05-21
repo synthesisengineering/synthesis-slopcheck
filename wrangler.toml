@@ -18,7 +18,7 @@ pages_build_output_dir = "."
 [vars]
 PER_IP_DAILY_LIMIT = "5"
 GLOBAL_DAILY_BUDGET_USD = "25"
-MAX_INPUT_CHARS = "50000"
+MAX_USER_CONTENT_CHARS = "200000"
 ALLOWED_MODELS = "claude-haiku-4-5-20251001,gpt-5.4-mini,gemini-3.1-flash-lite-preview"
 
 # KV binding for the rate limiter and budget counters.

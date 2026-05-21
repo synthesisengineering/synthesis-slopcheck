@@ -62,7 +62,7 @@ Cloudflare Email Worker that turns email into a slopcheck submission. A user for
 ## Limits applied
 
 - 10 messages per sender per UTC day (configurable via `PER_SENDER_DAILY_LIMIT` in the source).
-- Body capped at 50,000 characters (same as the hosted-tier web cap).
+- Body capped at 200,000 characters (same as the hosted-tier web cap).
 - Always uses Claude Haiku 4.5 on this channel (lowest-cost model).
 - Inherits the global daily community-budget kill switch from the hosted-tier Function.
 

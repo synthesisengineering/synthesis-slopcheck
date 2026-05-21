@@ -469,7 +469,7 @@ function buildTierProvider({ provider, providerId, apiKey }) {
   const hosted = window.SLOPCHECK_HOSTED_TIER;
   return {
     ...provider,
-    analyze: async ({ model, systemPrompt, userPrompt, maxTokens }) => {
+    analyze: async ({ model, systemPrompt, userPrompt, maxTokens, userContent }) => {
       const turnstileToken = await getTurnstileToken();
       return hosted.analyze({
         providerId,
@@ -478,6 +478,7 @@ function buildTierProvider({ provider, providerId, apiKey }) {
         userPrompt,
         maxTokens,
         turnstileToken,
+        userContent,
       });
     },
   };

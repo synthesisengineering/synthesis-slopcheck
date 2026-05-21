@@ -43,7 +43,7 @@ INTERNAL_KEY = os.environ.get("SLOPCHECK_INTERNAL_KEY", "")
 BYOK_PROVIDER = os.environ.get("SLOPCHECK_BYOK_PROVIDER", "")
 BYOK_KEY = os.environ.get("SLOPCHECK_BYOK_KEY", "")
 DEFAULT_MODEL = "claude-haiku-4-5-20251001"
-MAX_INPUT_CHARS = 50000
+MAX_INPUT_CHARS = 200000
 
 
 intents = discord.Intents.default()

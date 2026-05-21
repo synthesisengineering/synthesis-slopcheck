@@ -240,7 +240,7 @@ window.SLOPCHECK_PROVIDERS = PROVIDERS;
 const HOSTED_WORKER_BASE_URL = "/slopcheck/api/hosted";
 
 const HOSTED_TIER_LIMITS = {
-  maxInputChars: 50000,
+  maxInputChars: 200000,
   perIpDailyLimit: 5,
 };
 
@@ -251,6 +251,7 @@ async function hostedTierAnalyze({
   userPrompt,
   maxTokens,
   turnstileToken,
+  userContent,
 }) {
   if (!HOSTED_WORKER_BASE_URL) {
     throw new Error(
@@ -270,6 +271,7 @@ async function hostedTierAnalyze({
       systemPrompt,
       userPrompt,
       maxTokens: maxTokens || 8000,
+      userContent,
     }),
   });
 

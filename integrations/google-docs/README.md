@@ -41,7 +41,7 @@ Nothing. The sidebar's BYOK fields are session-scoped (cleared when the sidebar 
 
 ## Limits
 
-- 50,000-character document cap (same as the hosted-tier web cap). The sidebar errors clearly if the document exceeds this.
+- 200,000-character document cap (same as the hosted-tier web cap). The sidebar errors clearly if the document exceeds this.
 - Hosted-tier rate limits apply per IP. BYOK mode has no slopcheck-side limits (just the user's provider quota).
 
 ## License

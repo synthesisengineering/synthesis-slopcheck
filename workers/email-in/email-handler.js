@@ -24,7 +24,7 @@
 
 import PostalMime from "postal-mime";
 
-const MAX_INPUT_CHARS = 50000;
+const MAX_INPUT_CHARS = 200000;
 const PER_SENDER_DAILY_LIMIT = 10;
 const SLOPCHECK_HOSTED_URL = "https://tools.synthesiswriting.org/slopcheck/api/hosted/analyze";
 

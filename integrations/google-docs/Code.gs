@@ -75,9 +75,9 @@ function analyzeText(text, options) {
   if (!text || text.length === 0) {
     throw new Error("No content to analyze. Place the cursor in the document or select text first.");
   }
-  if (text.length > 50000) {
+  if (text.length > 200000) {
     throw new Error(
-      "This document is " + text.length.toLocaleString() + " characters, over the 50,000-character hosted-tier cap. " +
+      "This document is " + text.length.toLocaleString() + " characters, over the 200,000-character hosted-tier cap. " +
       "Bring your own API key (BYOK) for longer documents, or select a smaller portion."
     );
   }

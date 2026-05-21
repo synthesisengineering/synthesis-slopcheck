@@ -42,7 +42,7 @@ The slopcheck web app reads the `#content=` hash on load and pre-fills the texta
 
 ## Optional refinement: max length truncation
 
-To avoid sending very long page content (which would exceed the hosted-tier 50,000-character cap), insert a **Get Substring of Text** action between the input and URL Encode:
+To avoid sending very long page content (which would exceed the hosted-tier 200,000-character cap), insert a **Get Substring of Text** action between the input and URL Encode:
 
 - Take Substring: First N Characters
 - Number: 8000 (matches the bookmarklet's 8K char limit)

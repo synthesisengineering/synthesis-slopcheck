@@ -20,7 +20,7 @@ Plus fact-check items where the content has citations or quotes, top revision re
 ## Three ways to use it
 
 1. **BYOK (recommended).** Bring your own API key. Free. No daily cap. Latest models. Faster (no shared queue). Your key never leaves your browser.
-2. **Hosted tier (free, limited).** No key needed. 5 analyses per IP per day. Documents up to 50,000 characters. Cost-efficient models only (Haiku 4.5, GPT-5.4 Mini, Gemini 3 Flash Lite). When the daily community budget runs out, hosted tier rests until tomorrow.
+2. **Hosted tier (free, limited).** No key needed. 5 analyses per IP per day. Documents up to 200,000 characters. Cost-efficient models only (Haiku 4.5, GPT-5.4 Mini, Gemini 3 Flash Lite). When the daily community budget runs out, hosted tier rests until tomorrow.
 3. **Install locally.** Completely free. No caps. Runs in your AI agent (Claude Code, Codex, Cursor, etc.).
 
 ## Privacy
@@ -50,7 +50,7 @@ Hosted-tier path (opt-in, free, limited):
             ├── Turnstile (bot resistance)
             ├── Per-IP daily rate limit via KV (hashed IP, TTL)
             ├── Global daily community budget kill switch
-            ├── Input size cap (50K chars)
+            ├── User content size cap (200K chars)
             ├── Model allowlist (cost-efficient tier only)
             └── Dedicated slopcheck keys (isolated from Ragbot)
 
