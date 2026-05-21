@@ -286,8 +286,6 @@
     Cloudflare Turnstile. Loads lazily (defer) and runs only when the user
     selects the hosted tier — app.js calls window.turnstile.execute() with the
     site key embedded below. BYOK never invokes Turnstile.
-    Replace data-sitekey="0x4AAAAAADT4O5nhrIrbm28X" with the real site
-    key from the Cloudflare Turnstile dashboard before going live.
   -->
   <script
     src="https://challenges.cloudflare.com/turnstile/v0/api.js?onload=onTurnstileLoad&render=explicit"
