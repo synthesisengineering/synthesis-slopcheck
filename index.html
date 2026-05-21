@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>slopcheck: open source slop detection</title>
+  <meta name="description" content="Open source slop detection for journalists, editors, writers, and readers. Catches AI patterns by model family, substance failures, and fact-check issues. Slop detection, not just AI detection.">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header class="site-header">
+    <div class="container">
+      <h1 class="site-title">slopcheck</h1>
+      <p class="tagline">Open source slop detection for journalists, editors, writers, and readers. Slop detection, not just AI detection.</p>
+    </div>
+  </header>
+
+  <main class="container">
+
+    <section class="intro" aria-labelledby="intro-heading">
+      <h2 id="intro-heading">What this tool does</h2>
+      <p>
+        Paste an article, a draft, or any prose. The tool applies the open source <a href="https://github.com/synthesisengineering/synthesis-skills">synthesis engineering skill family</a> (v4.0 content-quality and v2.0 fact-checking) and returns a structured analysis covering two axes:
+      </p>
+      <ul>
+        <li><strong>AI provenance signals.</strong> Which model-family patterns triggered, with examples from your content. Family attribution where discernible (Claude, GPT, Gemini, Llama, Grok, DeepSeek, Mistral, Qwen).</li>
+        <li><strong>Slop independence.</strong> Whether your content carries substance and depth, regardless of how it was authored. Good AI-collaborated content passes; empty content fails regardless of provenance.</li>
+      </ul>
+      <p>
+        The skill family is open source. Anyone can <a href="https://github.com/synthesisengineering/synthesis-skills">install it locally</a> in their own AI agent for free. This hosted convenience tool is for people who want to try the system without installing anything.
+      </p>
+    </section>
+
+    <section class="audiences" aria-labelledby="audiences-heading">
+      <h2 id="audiences-heading">Who is this for</h2>
+      <div class="audience-cards">
+        <div class="audience-card">
+          <h3>Writers</h3>
+          <p>Pre-publish gut-check. Run a draft through and see what an editor's pattern-trained eye would flag before you hit publish.</p>
+        </div>
+        <div class="audience-card">
+          <h3>Journalists</h3>
+          <p>Screen wire copy, freelancer submissions, and pitches. Identify which AI-family signature you are looking at, with empirical anchors per family.</p>
+        </div>
+        <div class="audience-card">
+          <h3>Newsroom editors</h3>
+          <p>Forensic review of older articles, current submissions, AI-collaborated drafts. The catalog spans the entire LLM era, not just current frontier models.</p>
+        </div>
+        <div class="audience-card">
+          <h3>Marketers and execs on LinkedIn</h3>
+          <p>Avoid posting cringe slop. Check a draft post for the corporate-vocabulary, em-dash-heavy, no-specifics patterns that undermine your credibility.</p>
+        </div>
+        <div class="audience-card">
+          <h3>Researchers and academics</h3>
+          <p>An open-source, year-stratified, family-attributed catalog of AI-generation patterns. Compounding-archive design means it stays useful as models evolve.</p>
+        </div>
+        <div class="audience-card">
+          <h3>Engineers</h3>
+          <p>Install the skills locally in Claude Code, Codex, Cursor, or any AI agent. Use the CLI in CI. Audit the open source code.</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="privacy-banner" aria-label="Privacy notice">
+      <h2>Privacy: what we don't collect</h2>
+      <ul>
+        <li><strong>We don't store your content.</strong> Not on the BYOK path (your browser talks directly to the LLM provider you choose). Not on the hosted-tier path (the Pages Function streams the call and forgets it).</li>
+        <li><strong>We don't store your API key.</strong> On the BYOK path it lives only in your browser. We never see it.</li>
+        <li><strong>We don't store your IP address.</strong> The hosted tier uses an HMAC-SHA256 hash of your IP (with a salt we rotate) as a daily rate-limit counter. The raw IP is never written to storage.</li>
+        <li><strong>We don't use cookies, analytics, telemetry, or trackers.</strong> No Google Analytics, no Mixpanel, no third-party tags. No "view counts." No fingerprinting.</li>
+        <li><strong>We don't have user accounts.</strong> No login. No email. No password. No subscription.</li>
+        <li><strong>We don't share with third parties.</strong> Your content is sent only to the LLM provider you choose, for the time it takes to compute the response.</li>
+        <li><strong>We use Cloudflare Turnstile for bot resistance on the hosted tier</strong> (a privacy-preserving captcha alternative; no Google reCAPTCHA). BYOK skips Turnstile.</li>
+        <li><strong>Everything is open source.</strong> Audit the frontend at <a href="https://github.com/synthesisengineering/synthesis-slopcheck">github.com/synthesisengineering/synthesis-slopcheck</a> and the hosted-tier Pages Function in the same repo's <code>functions/</code> directory.</li>
+      </ul>
+    </section>
+
+    <section class="tier-choice" aria-labelledby="tier-heading">
+      <h2 id="tier-heading">Choose how to run it</h2>
+      <p class="tier-intro">Three ways to use slopcheck. All free. Pick the one that fits.</p>
+
+      <div class="tier-cards">
+        <label class="tier-card recommended">
+          <input type="radio" name="tier" value="byok" checked>
+          <div class="tier-card-body">
+            <div class="tier-card-header">
+              <strong>Bring your own API key</strong>
+              <span class="tier-badge">Recommended</span>
+            </div>
+            <ul>
+              <li>Free. You pay your provider's standard API rate (≈ $0.05 to $0.45 per analysis depending on model and document length).</li>
+              <li>No daily cap. Larger documents allowed.</li>
+              <li>Access to the best models: Claude Opus 4.7, GPT-5.5 Pro, Gemini 3.1 Pro.</li>
+              <li>Faster: no shared queue.</li>
+              <li>Your key stays in your browser. Nothing is sent to our servers.</li>
+            </ul>
+          </div>
+        </label>
+
+        <label class="tier-card">
+          <input type="radio" name="tier" value="hosted">
+          <div class="tier-card-body">
+            <div class="tier-card-header">
+              <strong>Use Rajiv's keys (free, limited)</strong>
+            </div>
+            <ul>
+              <li>No API key needed. Click and go.</li>
+              <li>5 analyses per day from your IP address.</li>
+              <li>Documents up to 50,000 characters.</li>
+              <li>Cost-efficient models only: Claude Haiku 4.5, GPT-5.4 Mini, Gemini 3 Flash Lite.</li>
+              <li>If the daily community budget runs out, hosted tier rests until tomorrow.</li>
+            </ul>
+          </div>
+        </label>
+
+        <div class="tier-card local-install">
+          <div class="tier-card-body">
+            <div class="tier-card-header">
+              <strong>Install locally</strong>
+            </div>
+            <ul>
+              <li>Completely free. No caps. Runs in your AI agent (Claude Code, Codex, Cursor, etc.).</li>
+              <li>Best for power users and teams.</li>
+              <li><a href="https://github.com/synthesisengineering/synthesis-skills#install">Install instructions</a>.</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <details class="byok-appeal">
+        <summary>Why bring your own key?</summary>
+        <p>
+          The hosted tier is free. The API calls it makes are not — they cost Rajiv money. Each hosted-tier analysis costs roughly $0.05 to $0.20 in API fees.
+        </p>
+        <p>
+          If you can afford an API key, please use it. A $5 minimum credit at any provider gets you around 50 analyses, the tool is faster, you can use the best models, and you free up the community budget for people who can't.
+        </p>
+        <p>
+          No login. No subscription. Just a free API key from your chosen provider, used directly from your browser.
+        </p>
+        <p>
+          If the tool is genuinely useful to you, you can <a href="https://github.com/sponsors/rajivpant" target="_blank" rel="noopener">support the open-source work on GitHub Sponsors</a>. One-time or recurring, any amount, voluntary. Not a gate on anything.
+        </p>
+      </details>
+    </section>
+
+    <section class="setup" aria-labelledby="setup-heading">
+      <h2 id="setup-heading">Setup</h2>
+
+      <div class="form-row">
+        <label for="provider">Provider</label>
+        <select id="provider" name="provider">
+          <option value="anthropic">Anthropic (Claude)</option>
+          <option value="openai">OpenAI (ChatGPT)</option>
+          <option value="google">Google (Gemini)</option>
+        </select>
+      </div>
+
+      <div class="form-row">
+        <label for="model">Model</label>
+        <select id="model" name="model"></select>
+        <p class="form-help" id="model-help"></p>
+      </div>
+
+      <div class="form-row byok-only">
+        <label for="api-key">Your API key</label>
+        <input type="password" id="api-key" name="api-key" placeholder="sk-ant-... or sk-..." autocomplete="off">
+        <button type="button" id="toggle-key-visibility" class="link-button" aria-label="Show or hide API key">Show</button>
+      </div>
+
+      <div class="form-row checkbox-row byok-only">
+        <input type="checkbox" id="remember-key">
+        <label for="remember-key">Remember key in this browser (uses localStorage; persists across sessions until cleared)</label>
+        <button type="button" id="clear-key" class="link-button">Clear stored key</button>
+      </div>
+
+      <details class="provider-help byok-only">
+        <summary>How do I get an API key?</summary>
+        <ul>
+          <li><strong>Anthropic (Claude):</strong> <a href="https://console.anthropic.com/settings/keys" target="_blank" rel="noopener">console.anthropic.com/settings/keys</a>. Create an API key, then come back and paste it here.</li>
+          <li><strong>OpenAI:</strong> <a href="https://platform.openai.com/api-keys" target="_blank" rel="noopener">platform.openai.com/api-keys</a>.</li>
+          <li><strong>Google (Gemini):</strong> <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">aistudio.google.com/apikey</a>.</li>
+        </ul>
+        <p>Your key stays in your browser. This page does not send it to any server.</p>
+      </details>
+
+      <div class="hosted-status hosted-only" id="hosted-status" hidden>
+        <p id="hosted-status-text">Hosted tier ready.</p>
+      </div>
+    </section>
+
+    <section class="analyze" aria-labelledby="analyze-heading">
+      <h2 id="analyze-heading">Analyze your content</h2>
+
+      <div class="form-row">
+        <label for="content">Content to analyze</label>
+        <textarea id="content" name="content" rows="14" placeholder="Paste your article, draft, or text here..."></textarea>
+        <div class="char-count"><span id="char-count">0</span> characters</div>
+      </div>
+
+      <div class="form-row">
+        <fieldset class="mode-fieldset">
+          <legend>Detector mode</legend>
+          <label><input type="radio" name="mode" value="artifact" checked> Artifact mode (default; the content is the produced artifact, not a chat transcript)</label>
+          <label><input type="radio" name="mode" value="full-response"> Full-response mode (includes the conversational wrapper from a chat transcript)</label>
+        </fieldset>
+      </div>
+
+      <div class="form-row">
+        <button type="button" id="analyze-button" class="primary-button">Analyze</button>
+        <span id="status" class="status"></span>
+      </div>
+
+      <ol id="progress-list" class="progress-list" hidden></ol>
+    </section>
+
+    <section class="result" id="result-section" aria-labelledby="result-heading" hidden>
+      <h2 id="result-heading">Analysis</h2>
+      <div id="result" class="result-content"></div>
+      <div class="result-actions">
+        <button type="button" id="copy-result" class="link-button">Copy result as markdown</button>
+        <button type="button" id="download-result" class="link-button">Download result as .md file</button>
+      </div>
+    </section>
+
+    <section class="install-paths" aria-labelledby="install-paths-heading">
+      <h2 id="install-paths-heading">All the ways to use slopcheck</h2>
+      <p class="install-intro">Pick whichever fits how you work. Every path is open source and free.</p>
+
+      <h3>Try it inside your chat tool</h3>
+      <ul class="install-list">
+        <li><strong><a href="https://chatgpt.com/g/g-6a0f58597c048191aadf3e8ce61d4a2f-slopcheck" target="_blank" rel="noopener">Slopcheck GPT</a></strong> in the OpenAI GPT Store. Use slopcheck directly inside ChatGPT. <em>Account: free ChatGPT.</em></li>
+        <li><strong>Slopcheck as a Claude Project</strong>. Set up your own Slopcheck project in <a href="https://claude.ai/projects" target="_blank" rel="noopener">Claude.ai</a> using the <a href="https://github.com/synthesisengineering/synthesis-slopcheck/blob/main/platforms/claude-project.md" target="_blank" rel="noopener">recipe in the repo</a> — custom instructions and knowledge files included. <em>Account: Claude.ai (Pro projects are single-user; Team and above support public sharing).</em></li>
+        <li><strong>Prompt template</strong> for any chatbot with web fetch. Copy <a href="https://raw.githubusercontent.com/synthesisengineering/synthesis-skills/main/tools/slop-detection/prompt-template.md">the prompt template</a> and paste it into ChatGPT, Claude, Gemini, or Perplexity along with your content.</li>
+      </ul>
+
+      <h3>Browser-side, no install</h3>
+      <ul class="install-list">
+        <li><strong>This web app</strong>. The page you are on. BYOK or hosted tier. No account.</li>
+        <li><strong>Bookmarklet</strong>: drag this link to your bookmarks bar:
+          <a class="bookmarklet" href="javascript:(function(){var text=window.getSelection().toString()||document.body.innerText.slice(0,8000);var u='https://tools.synthesiswriting.org/slopcheck/#content='+encodeURIComponent(text);window.open(u,'_blank');})();">slopcheck this page</a>
+          . Click it on any page to open slopcheck with the selected text (or page content) pre-filled.
+        </li>
+        <li><strong>Chrome / Edge extension</strong>: right-click any selection → "Slopcheck this." (See the <a href="https://github.com/synthesisengineering/synthesis-slopcheck/tree/main/extensions/chrome">extensions/chrome</a> source.)</li>
+        <li><strong>Apple Shortcuts</strong>: share-sheet integration on iPhone, iPad, and Mac. (See <a href="https://github.com/synthesisengineering/synthesis-slopcheck/blob/main/platforms/apple-shortcuts.md">platforms/apple-shortcuts.md</a>.)</li>
+      </ul>
+
+      <h3>Command line and packages</h3>
+      <ul class="install-list">
+        <li><strong>Homebrew</strong> (macOS / Linux): <code>brew install synthesisengineering/tap/slopcheck</code></li>
+        <li><strong>npm</strong>: <code>npm install -g @synthesisengineering/slopcheck</code></li>
+        <li><strong>bun</strong>: <code>bun add -g @synthesisengineering/slopcheck</code></li>
+        <li><strong>AUR (Arch Linux)</strong>: <code>paru -S slopcheck</code></li>
+        <li><strong>curl</strong> (any POSIX): <code>curl -fsSL https://synthesisengineering.org/install.sh | sh</code></li>
+        <li><strong>Python CLI direct</strong>: clone the repo, run <code>cli/slopcheck.py</code> (no dependencies, Python 3 stdlib only).</li>
+      </ul>
+
+      <h3>For engineers and teams</h3>
+      <ul class="install-list">
+        <li><strong>Install the skills</strong> in your AI agent (Claude Code, Codex, Cursor, etc.) for free. See <a href="https://github.com/synthesisengineering/synthesis-skills#install">install instructions</a>.</li>
+        <li><strong>Self-host</strong>: clone <a href="https://github.com/synthesisengineering/synthesis-slopcheck">synthesis-slopcheck</a> and deploy your own copy. Cloudflare Pages is the reference host.</li>
+        <li><strong>Slack / Discord bot scaffold</strong>: self-host instructions for newsrooms and teams. (Scaffolded in the repo.)</li>
+        <li><strong>GitHub Action</strong> (planned, post-launch): run slopcheck on a PR diff and post a review comment.</li>
+      </ul>
+    </section>
+
+    <section class="support">
+      <h2>Support the open-source work</h2>
+      <p>
+        Slopcheck and the synthesis engineering skills are open source and free. If they are genuinely useful to you, <a href="https://github.com/sponsors/rajivpant" target="_blank" rel="noopener">supporting Rajiv on GitHub Sponsors</a> helps keep the hosted tier running and the open-source work going. One-time or recurring, any amount you choose. Voluntary. Not a gate on anything.
+      </p>
+    </section>
+
+  </main>
+
+  <footer class="site-footer">
+    <div class="container">
+      <p>
+        Part of the <a href="https://synthesisengineering.org">synthesis engineering</a> ecosystem. Open source, public service, no data collection. Made by Rajiv Pant. Support the work: <a href="https://github.com/sponsors/rajivpant" target="_blank" rel="noopener">GitHub Sponsors</a>.
+      </p>
+      <p class="version">slopcheck web app v0.2.0. Skills: synthesis-content-quality v4.0, synthesis-fact-checking v2.0.</p>
+    </div>
+  </footer>
+
+  <!--
+    Cloudflare Turnstile. Loads lazily (defer) and runs only when the user
+    selects the hosted tier — app.js calls window.turnstile.execute() with the
+    site key embedded below. BYOK never invokes Turnstile.
+    Replace data-sitekey="0x4AAAAAADT4O5nhrIrbm28X" with the real site
+    key from the Cloudflare Turnstile dashboard before going live.
+  -->
+  <script
+    src="https://challenges.cloudflare.com/turnstile/v0/api.js?onload=onTurnstileLoad&render=explicit"
+    defer
+  ></script>
+  <div
+    id="turnstile-widget"
+    data-sitekey="0x4AAAAAADT4O5nhrIrbm28X"
+    data-size="invisible"
+  ></div>
+
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+  <script src="providers.js"></script>
+  <script src="passes.js"></script>
+  <script src="orchestrator.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

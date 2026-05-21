@@ -1,0 +1,30 @@
+# Cloudflare Pages + Functions configuration for synthesis-slopcheck.
+#
+# The static site (HTML/CSS/JS at the repo root) deploys as a Pages project.
+# Anything under `functions/` deploys as a Pages Function with filesystem-based
+# routing. /api/hosted/analyze is the hosted-tier entry point.
+#
+# Secrets (set via `wrangler pages secret put <NAME> --project-name slopcheck`):
+#   SLOPCHECK_ANTHROPIC_KEY  — dedicated Anthropic key for slopcheck (not Ragbot's)
+#   SLOPCHECK_OPENAI_KEY     — dedicated OpenAI key
+#   SLOPCHECK_GOOGLE_KEY     — dedicated Google AI Studio key
+#   TURNSTILE_SECRET_KEY     — from the Cloudflare Turnstile dashboard
+#   IP_HASH_SALT             — random 32-byte hex string for privacy-preserving IP hashing
+
+name = "slopcheck"
+compatibility_date = "2026-05-21"
+pages_build_output_dir = "."
+
+[vars]
+PER_IP_DAILY_LIMIT = "5"
+GLOBAL_DAILY_BUDGET_USD = "25"
+MAX_INPUT_CHARS = "50000"
+ALLOWED_MODELS = "claude-haiku-4-5-20251001,gpt-5.4-mini,gemini-3.1-flash-lite-preview"
+
+# KV binding for the rate limiter and budget counters.
+# Create the namespace via:
+#   wrangler kv:namespace create slopcheck_hosted_tier --preview false
+# Then paste the returned id below.
+[[kv_namespaces]]
+binding = "SLOPCHECK_KV"
+id = "d78a8c781a2647a18c15c60ef82c5441"

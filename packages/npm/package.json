@@ -1,0 +1,37 @@
+{
+  "name": "@synthesisengineering/slopcheck",
+  "version": "0.1.0",
+  "description": "Open source slop detection. CLI wrapper for the synthesis engineering skill family. Slop detection, not just AI detection.",
+  "license": "MIT",
+  "author": "Rajiv Pant",
+  "homepage": "https://tools.synthesiswriting.org/slopcheck",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/synthesisengineering/synthesis-slopcheck.git"
+  },
+  "bugs": "https://github.com/synthesisengineering/synthesis-slopcheck/issues",
+  "keywords": [
+    "slop-detection",
+    "ai-detection",
+    "content-quality",
+    "synthesis-engineering",
+    "synthesis-skills",
+    "fact-checking",
+    "newsroom",
+    "editor"
+  ],
+  "bin": {
+    "slopcheck": "./bin/slopcheck.js"
+  },
+  "files": [
+    "bin/",
+    "vendor/",
+    "README.md"
+  ],
+  "scripts": {
+    "postinstall": "node bin/postinstall.js"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}

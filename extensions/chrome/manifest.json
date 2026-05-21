@@ -1,0 +1,28 @@
+{
+  "manifest_version": 3,
+  "name": "Slopcheck",
+  "version": "0.1.0",
+  "description": "Open source slop detection. Analyze any selection or page for AI patterns and substance failures. Slop, not just AI.",
+  "author": "Rajiv Pant",
+  "homepage_url": "https://tools.synthesiswriting.org/slopcheck",
+  "icons": {
+    "16": "icons/icon-16.png",
+    "48": "icons/icon-48.png",
+    "128": "icons/icon-128.png"
+  },
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "Slopcheck",
+    "default_icon": {
+      "16": "icons/icon-16.png",
+      "48": "icons/icon-48.png",
+      "128": "icons/icon-128.png"
+    }
+  },
+  "background": {
+    "service_worker": "background.js",
+    "type": "module"
+  },
+  "permissions": ["contextMenus", "activeTab", "scripting"],
+  "host_permissions": ["https://tools.synthesiswriting.org/*"]
+}

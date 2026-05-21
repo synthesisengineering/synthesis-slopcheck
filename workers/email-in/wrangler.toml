@@ -1,0 +1,14 @@
+name = "slopcheck-email-in"
+main = "email-handler.js"
+compatibility_date = "2026-05-21"
+compatibility_flags = ["nodejs_compat"]
+
+# Same KV namespace as the hosted-tier Pages Function (so sender rate-limit
+# counters share the same KV with the IP rate-limit counters).
+[[kv_namespaces]]
+binding = "SLOPCHECK_KV"
+id = "d78a8c781a2647a18c15c60ef82c5441"
+
+# Bundle the postal-mime parser. Cloudflare Workers don't have a built-in
+# MIME parser; postal-mime is small and well-maintained.
+# Install with: cd workers/email-in && npm install postal-mime

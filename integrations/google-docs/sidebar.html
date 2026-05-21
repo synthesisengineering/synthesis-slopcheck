@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <base target="_top">
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      font-size: 14px;
+      margin: 0;
+      padding: 12px 14px;
+      color: #1a1a1a;
+    }
+    h2 {
+      font-size: 1.05rem;
+      margin: 0 0 8px;
+    }
+    .info {
+      font-size: 0.85rem;
+      color: #555;
+      margin: 0 0 12px;
+    }
+    .row {
+      margin: 0.5rem 0;
+    }
+    label {
+      display: block;
+      font-weight: 600;
+      font-size: 0.85rem;
+      margin-bottom: 4px;
+    }
+    select, input[type="text"], input[type="password"], textarea {
+      width: 100%;
+      padding: 6px 8px;
+      border: 1px solid #d6d6cf;
+      border-radius: 4px;
+      font-size: 0.9rem;
+      font-family: inherit;
+    }
+    textarea { resize: vertical; min-height: 120px; }
+    button {
+      width: 100%;
+      padding: 8px 12px;
+      background: #2d5d3a;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      font-weight: 600;
+      cursor: pointer;
+      font-size: 0.95rem;
+    }
+    button:hover { background: #1f4326; }
+    button:disabled { background: #888; cursor: not-allowed; }
+    details summary {
+      cursor: pointer;
+      color: #2d5d3a;
+      font-weight: 600;
+      font-size: 0.85rem;
+      margin: 12px 0 6px;
+    }
+    .result {
+      margin-top: 12px;
+      padding: 10px 12px;
+      background: #fafaf7;
+      border: 1px solid #d6d6cf;
+      border-radius: 4px;
+      white-space: pre-wrap;
+      font-size: 0.9rem;
+      line-height: 1.5;
+    }
+    .error {
+      color: #a02020;
+      margin: 8px 0;
+      font-size: 0.9rem;
+    }
+    .footer {
+      margin-top: 14px;
+      font-size: 0.8rem;
+      color: #555;
+    }
+    .footer a { color: #2d5d3a; }
+  </style>
+</head>
+<body>
+  <h2>Slopcheck</h2>
+  <p class="info">Open source slop detection. Two-axis (AI signals + substance) analysis powered by the synthesis engineering skill family.</p>
+
+  <button id="analyze">Analyze this document</button>
+
+  <details>
+    <summary>Use my own API key (BYOK)</summary>
+    <div class="row">
+      <label for="byok-provider">Provider</label>
+      <select id="byok-provider">
+        <option value="">Hosted tier (free, limited)</option>
+        <option value="anthropic">Anthropic (Claude)</option>
+        <option value="openai">OpenAI (ChatGPT)</option>
+        <option value="google">Google (Gemini)</option>
+      </select>
+    </div>
+    <div class="row">
+      <label for="byok-model">Model</label>
+      <input type="text" id="byok-model" placeholder="claude-sonnet-4-6 / gpt-5.5 / gemini-3.1-pro-preview">
+    </div>
+    <div class="row">
+      <label for="byok-key">API key</label>
+      <input type="password" id="byok-key" placeholder="sk-ant-... / sk-... / AIza...">
+      <p class="info">Key stays in this sidebar's session and is sent only to the provider you choose. Never to our servers.</p>
+    </div>
+  </details>
+
+  <div id="error" class="error"></div>
+  <div id="result" class="result" style="display:none"></div>
+
+  <p class="footer">
+    <a href="https://tools.synthesiswriting.org/slopcheck" target="_blank">Web app</a> •
+    <a href="https://github.com/synthesisengineering/synthesis-slopcheck" target="_blank">Open source</a> •
+    <a href="https://github.com/sponsors/rajivpant" target="_blank">Support</a>
+  </p>
+
+  <script>
+    document.getElementById("analyze").addEventListener("click", () => {
+      const btn = document.getElementById("analyze");
+      const errEl = document.getElementById("error");
+      const resEl = document.getElementById("result");
+      errEl.textContent = "";
+      resEl.style.display = "none";
+      resEl.textContent = "";
+      btn.disabled = true;
+      btn.textContent = "Analyzing…";
+
+      const provider = document.getElementById("byok-provider").value;
+      const key = document.getElementById("byok-key").value.trim();
+      const model = document.getElementById("byok-model").value.trim();
+
+      google.script.run
+        .withSuccessHandler((text) => {
+          google.script.run
+            .withSuccessHandler((analysis) => {
+              resEl.style.display = "block";
+              resEl.textContent = analysis;
+              btn.disabled = false;
+              btn.textContent = "Analyze this document";
+            })
+            .withFailureHandler((err) => {
+              errEl.textContent = err.message || String(err);
+              btn.disabled = false;
+              btn.textContent = "Analyze this document";
+            })
+            .analyzeText(text, {
+              useByok: provider && key,
+              byokProvider: provider,
+              byokKey: key,
+              byokModel: model,
+            });
+        })
+        .withFailureHandler((err) => {
+          errEl.textContent = err.message || String(err);
+          btn.disabled = false;
+          btn.textContent = "Analyze this document";
+        })
+        .getDocumentText();
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Slopcheck</title>
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <header>
+    <h1>Slopcheck</h1>
+    <p class="tagline">Slop detection, not just AI detection.</p>
+  </header>
+
+  <main>
+    <button type="button" id="check-page" class="primary-button">Slopcheck this page</button>
+    <button type="button" id="check-selection" class="secondary-button">Slopcheck my selection</button>
+
+    <details>
+      <summary>Or paste text</summary>
+      <textarea id="paste-area" rows="6" placeholder="Paste content here, then click Slopcheck."></textarea>
+      <button type="button" id="check-paste" class="secondary-button">Slopcheck this text</button>
+    </details>
+
+    <p class="info">
+      Opens the open source web app at <code>tools.synthesiswriting.org/slopcheck</code>.
+      Use BYOK or the hosted tier from there. This extension stores nothing.
+    </p>
+  </main>
+
+  <footer>
+    <a href="https://github.com/synthesisengineering/synthesis-slopcheck" target="_blank" rel="noopener">Source on GitHub</a>
+  </footer>
+
+  <script src="popup.js"></script>
+</body>
+</html>

@@ -1,0 +1,11 @@
+# GitHub Sponsors funding configuration.
+# Renders a "Sponsor" button on every page of this repo, linking to the
+# channels listed below. One-time and recurring donations supported.
+#
+# Documentation: https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/displaying-a-sponsor-button-in-your-repository
+
+github: [rajivpant]
+
+# Optional: add Patreon, OpenCollective, etc. by uncommenting below.
+# patreon: rajivpant
+# custom: ['https://www.patreon.com/rajivpant']

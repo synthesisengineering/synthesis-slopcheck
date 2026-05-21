@@ -1,0 +1,27 @@
+# Maintainer: Rajiv Pant <rajiv at example dot com>
+# (Update the maintainer line with the actual public address before submitting.)
+
+pkgname=slopcheck
+pkgver=0.1.0
+pkgrel=1
+pkgdesc="Open source slop detection — slop detection, not just AI detection"
+arch=('any')
+url="https://tools.synthesiswriting.org/slopcheck"
+license=('MIT')
+depends=('python')
+source=("$pkgname-$pkgver.tar.gz::https://github.com/synthesisengineering/synthesis-slopcheck/archive/refs/tags/v${pkgver}.tar.gz")
+sha256sums=('REPLACE_WITH_RELEASE_TARBALL_SHA256')
+
+package() {
+  cd "$srcdir/synthesis-slopcheck-${pkgver}"
+  install -Dm755 cli/slopcheck.py "$pkgdir/usr/lib/$pkgname/slopcheck.py"
+  install -dm755 "$pkgdir/usr/bin"
+  cat > "$pkgdir/usr/bin/slopcheck" <<EOF
+#!/usr/bin/env bash
+exec python3 /usr/lib/$pkgname/slopcheck.py "\$@"
+EOF
+  chmod 0755 "$pkgdir/usr/bin/slopcheck"
+
+  install -Dm644 LICENSE "$pkgdir/usr/share/licenses/$pkgname/LICENSE"
+  install -Dm644 README.md "$pkgdir/usr/share/doc/$pkgname/README.md"
+}
