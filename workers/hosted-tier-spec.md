@@ -1,12 +1,12 @@
-# Hosted-Tier Cloudflare Worker — Spec
+# Hosted-Tier Architecture — Spec and Notes
 
-**Status:** Spec. Implementation pending.
-**Last revised:** 2026-05-19
-**Project:** synthesis-quality-skills-upgrade, Phase 3 (Distribution Infrastructure)
+**Status:** Live in production at `tools.synthesiswriting.org/slopcheck/api/hosted/analyze`.
+**Implementation:** [`/functions/api/hosted/analyze.js`](../functions/api/hosted/analyze.js) — a Cloudflare Pages Function (the original spec called for a standalone Worker; the deployed implementation chose a Pages Function for simpler co-location with the static frontend).
+**Last revised:** 2026-05-21
 
 ## Purpose
 
-Provide a zero-friction "try it now" hosted tier for users without an API key, using Rajiv's dedicated slopcheck API keys (not Ragbot's) behind seven layers of cost protection. This Worker is the ONLY hosted-tier entry point; BYOK bypasses it entirely.
+Provide a zero-friction "try it now" hosted tier for users without an API key, using dedicated slopcheck API keys (isolated from other products) behind seven layers of cost protection. This Function is the ONLY hosted-tier entry point; BYOK bypasses it entirely.
 
 ## Architecture summary
 
@@ -16,14 +16,15 @@ BYOK path (default):
   (user's key, no Cloudflare involvement, no rate limits, no input cap)
 
 Hosted-tier path (opt-in):
-  Browser  ──→  Cloudflare Worker  ──→  LLM provider
+  Browser  ──→  Pages Function  ──→  LLM provider
                       ↓
                       Turnstile check (bot resistance)
+                      Internal-proxy-key bypass for trusted Workers (email-in)
                       KV per-IP rate limit (hashed IP, TTL)
                       Global daily budget kill switch
-                      Input size validation (50K char cap)
+                      User-content size cap (200K chars)
                       Model allowlist enforcement
-                      (Worker uses dedicated slopcheck keys)
+                      (Function uses dedicated slopcheck keys)
 ```
 
 ## Configuration (Worker secrets, set via `wrangler secret put`)
@@ -42,7 +43,7 @@ Hosted-tier path (opt-in):
 |-----|---------|---------|
 | `PER_IP_DAILY_LIMIT` | `5` | Analyses per IP per UTC day |
 | `GLOBAL_DAILY_BUDGET_USD` | `25` | Kill switch triggers when daily spend approaches this |
-| `MAX_INPUT_CHARS` | `50000` | Hosted-tier input size cap |
+| `MAX_USER_CONTENT_CHARS` | `200000` | Cap on the user's pasted/uploaded content length (not the assembled methodology prompt) |
 | `ALLOWED_MODELS` | (see below) | Comma-separated allowlist |
 
 **Default model allowlist** (cost-efficient tier only):
@@ -74,7 +75,7 @@ Body:
   {
     "provider": "anthropic" | "openai" | "google",
     "model": "<must be in ALLOWED_MODELS>",
-    "content": "<user content, max MAX_INPUT_CHARS>",
+    "userContent": "<user content, max MAX_USER_CONTENT_CHARS>",
     "mode": "artifact" | "full-response",
     "pass": "single" | "a1" | "a2" | "a3-b2" | "c1" | "synthesis",
     "pass_inputs": { ... }  // for multi-pass synthesis pass
@@ -87,7 +88,7 @@ Body:
 2. **Read client IP.** Hash it with `IP_HASH_SALT`.
 3. **Check global kill switch.** If `killswitch:<today>` is set, return `429 Daily community budget reached`.
 4. **Check per-IP rate limit.** Read `rl:<hashed_ip>:<today>`. If ≥ `PER_IP_DAILY_LIMIT`, return `429 Daily personal limit reached. BYOK for unlimited use.`
-5. **Validate input size.** If `content.length > MAX_INPUT_CHARS`, return `413 Document too long for hosted tier. BYOK or install locally.`
+5. **Validate input size.** If `userContent.length > MAX_USER_CONTENT_CHARS`, return `413 Document too long for hosted tier. BYOK or install locally.`
 6. **Validate model.** If model not in allowlist, return `400 Model not available on hosted tier. BYOK for frontier models.`
 7. **Proxy to provider.** Use the appropriate dedicated key. Same request shape the frontend would send directly in BYOK mode.
 8. **Increment counters.**
