@@ -484,8 +484,11 @@ function buildTierProvider({ provider, providerId, apiKey }) {
   };
 }
 
-// Turnstile widget is rendered explicitly when the user first selects the
-// hosted tier. The widget id is cached so subsequent calls just re-execute.
+// Turnstile widget is rendered once and cached. Each hosted-tier call
+// then resets the widget and re-executes to get a fresh single-use token.
+// Tokens are single-use on the verify endpoint; the multi-pass orchestrator
+// makes N requests per analysis, so re-using the same token would 403 the
+// second pass with "missing-token" (Cloudflare's idempotency rejection).
 let turnstileWidgetId = null;
 
 window.onTurnstileLoad = function () {
@@ -516,17 +519,39 @@ async function getTurnstileToken() {
       sitekey: siteKey,
       size: widgetContainer.getAttribute("data-size") || "invisible",
     });
+  } else {
+    // Turnstile tokens are single-use on the verify endpoint. The multi-pass
+    // orchestrator calls the provider 4-5 times per analysis on small-context
+    // models like Haiku 4.5 (when the full methodology pushes past the model's
+    // window); each call needs its own fresh token. Reset the widget before
+    // re-executing so execute() generates a new token instead of returning
+    // the now-consumed prior one.
+    window.turnstile.reset(turnstileWidgetId);
   }
 
   return new Promise((resolve) => {
+    let settled = false;
+    const safetyTimer = setTimeout(() => {
+      if (!settled) {
+        settled = true;
+        resolve("");
+      }
+    }, 20000);
+    const done = (token) => {
+      if (!settled) {
+        settled = true;
+        clearTimeout(safetyTimer);
+        resolve(token || "");
+      }
+    };
     try {
       window.turnstile.execute(turnstileWidgetId, {
-        callback: (token) => resolve(token),
-        "error-callback": () => resolve(""),
-        "timeout-callback": () => resolve(""),
+        callback: (token) => done(token),
+        "error-callback": () => done(""),
+        "timeout-callback": () => done(""),
       });
     } catch (e) {
-      resolve("");
+      done("");
     }
   });
 }
