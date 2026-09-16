@@ -1,51 +1,17 @@
-# AUR package for slopcheck
+# AUR packaging scaffold for slopcheck
 
-The PKGBUILD and .SRCINFO in this directory belong in the Arch User Repository.
+The AUR channel is **unavailable**. `PKGBUILD` and `.SRCINFO` in this directory are packaging scaffolds with placeholder release checksums; the slopcheck package has not been published to AUR.
 
-## One-time setup
+For local use, review the [CLI source](../../cli/slopcheck.py) and follow the [manual setup guide](../../cli/README.md). Do not treat this packaging directory as an installation route.
 
-1. Make sure Rajiv has an AUR account at https://aur.archlinux.org (or a trusted Arch user co-maintains).
-2. Add the SSH public key to the AUR account.
-3. Clone the (empty) AUR repo: `git clone ssh://aur@aur.archlinux.org/slopcheck.git`.
-4. Copy `PKGBUILD` and `.SRCINFO` from this directory into the clone.
-5. Tag a release `v0.1.0` in `synthesis-slopcheck` on GitHub.
-6. Compute the tarball SHA256 and replace `REPLACE_WITH_RELEASE_TARBALL_SHA256` in both files:
+## Maintainer release requirements
 
-   ```sh
-   curl -sL https://github.com/synthesisengineering/synthesis-slopcheck/archive/refs/tags/v0.1.0.tar.gz | sha256sum
-   ```
+Before publishing installation instructions:
 
-7. Commit and push to the AUR repo.
+1. Publish a versioned source archive and verify its contents, including the license file expected by the package.
+2. Replace the placeholder checksums in both package files with the archive's verified SHA-256 digest.
+3. Validate the package in an isolated Arch Linux environment with its declared Python dependency.
+4. Publish to AUR and verify a clean installation from the public package.
+5. Record the tested release before adding user commands for an AUR helper.
 
-## Users install via
-
-```sh
-paru -S slopcheck
-# or
-yay -S slopcheck
-```
-
-## Updating
-
-On each release:
-
-1. Bump `pkgver` in `PKGBUILD`.
-2. Reset `pkgrel=1`.
-3. Update the `sha256sums` line.
-4. Regenerate `.SRCINFO`:
-
-   ```sh
-   makepkg --printsrcinfo > .SRCINFO
-   ```
-
-5. Commit both files.
-6. Push to the AUR repo.
-
-## Testing locally
-
-```sh
-git clone ssh://aur@aur.archlinux.org/slopcheck.git
-cd slopcheck
-makepkg -si
-slopcheck --list-models
-```
+These requirements describe remaining packaging work; this documentation update does not publish or install a package.

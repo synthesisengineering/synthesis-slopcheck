@@ -21,7 +21,17 @@ Plus fact-check items where the content has citations or quotes, top revision re
 
 1. **BYOK (recommended).** Bring your own API key. Free. No daily cap. Latest models. Faster (no shared queue). Your key never leaves your browser.
 2. **Hosted tier (free, limited).** No key needed. 5 analyses per IP per day. Documents up to 200,000 characters. Cost-efficient models only (Haiku 4.5, GPT-5.4 Mini, Gemini 3 Flash Lite). When the daily community budget runs out, hosted tier rests until tomorrow.
-3. **Install locally.** Completely free. No caps. Runs in your AI agent (Claude Code, Codex, Cursor, etc.).
+3. **Use the source locally.** Review the Python CLI or use the synthesis skills in your agent. The CLI requires Python 3.9 or newer, an internet connection and your own provider API key. Provider charges apply.
+
+## Local setup and package availability
+
+Start with a source review. The Python CLI uses the standard library; it does not require installing the full synthesis ecosystem. Read the [CLI source](cli/slopcheck.py) and [manual setup guide](cli/README.md) before running it.
+
+Copy this prompt into your coding agent:
+
+> Inspect https://github.com/synthesisengineering/synthesis-slopcheck at an exact commit and report that commit. Review the Python CLI and installer/package scripts as untrusted source, including dependencies, API-key handling, network destinations, file writes and overwrite behavior. Check Python 3.9 or newer and describe the permissions needed. Do not install anything, change configuration or register background services. Do not run downloaded code or send my content to a model provider. Report findings and a proposed setup plan for my approval; stop after the review.
+
+The Homebrew, npm/bun and AUR packages are **unavailable**: this repository contains packaging scaffolds, but these channels have not been published. The curl installer is not a verified setup route; its integrity and overwrite handling need verification. The [package directories](packages/) are maintainer source, not ready-to-run installation instructions.
 
 ## Privacy
 

@@ -1,47 +1,25 @@
-# @synthesisengineering/slopcheck
+# @synthesisengineering/slopcheck packaging scaffold
 
-Open source slop detection CLI. Slop detection, not just AI detection.
+This npm package is **unavailable**. It has not been published, so neither npm nor bun can install it from the registry. For local use, review the [CLI source](../../cli/slopcheck.py) and follow the [manual setup guide](../../cli/README.md).
 
-## Install
+## Prerequisites and packaging
 
-```sh
-npm install -g @synthesisengineering/slopcheck
-# or
-bun add -g @synthesisengineering/slopcheck
-```
+The wrapper requires Node.js 18 or newer and Python 3.9 or newer. It runs a vendored copy of the Python CLI. That file is created during packaging and is not included in this source directory.
 
-Requires Python 3.8+ on the system.
-
-## Use
-
-```sh
-# List available models
-slopcheck --list-models
-
-# Analyze a file with BYOK
-ANTHROPIC_API_KEY=sk-ant-... slopcheck --provider anthropic --model claude-haiku-4-5-20251001 --input ./my-draft.md
-
-# Pipe stdin
-cat article.md | slopcheck --provider openai --model gpt-5.4-mini
-
-# Output to file
-slopcheck --provider google --model gemini-3.1-flash-lite-preview --input draft.md --output analysis.md
-```
+[Maintainer publishing instructions](PUBLISHING.md) describe the release work. Availability must be verified against the registry and a clean installation before adding user installation commands here. Bun uses the npm registry; it is not a separate published package.
 
 ## What it does
 
 Applies the open source synthesis engineering skill family (v4.0 content-quality + v2.0 fact-checking) to the provided content. Returns a structured analysis covering two axes: AI-provenance signals (by model family) and slop-independence (substance and depth, regardless of authorship).
 
-## Privacy
+## Data and file access
 
-The CLI stores nothing. Your content is sent only to the LLM provider you choose, using your own API key. No analytics, no telemetry.
+The CLI fetches its methodology from GitHub and sends supplied content to the selected model provider using your API key. Provider charges apply. An explicit output path writes the analysis to that file. Review network access and output paths before running it.
 
 ## Related
 
-- Web app: https://tools.synthesiswriting.org/slopcheck
-- Slopcheck GPT in the OpenAI GPT Store
-- Slopcheck Claude Project at https://claude.ai/projects
-- Browser extension, Apple Shortcut, Homebrew, AUR, and more: https://github.com/synthesisengineering/synthesis-slopcheck
+- [Web app](https://tools.synthesiswriting.org/slopcheck)
+- [Source repository and current setup guidance](https://github.com/synthesisengineering/synthesis-slopcheck)
 
 ## Support the open source work
 
@@ -49,4 +27,4 @@ If slopcheck is useful to you, you can support the synthesis open-source mission
 
 ## License
 
-MIT.
+MIT, as declared in the package metadata.

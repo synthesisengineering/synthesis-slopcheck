@@ -6,32 +6,32 @@ a piece of text and prints a structured analysis. BYOK (bring your own key).
 
 Usage:
     # Analyze a file
-    slopcheck article.md
+    python3 cli/slopcheck.py article.md
 
     # Analyze from stdin
-    cat article.md | slopcheck
+    cat article.md | python3 cli/slopcheck.py
 
     # Analyze a URL (fetches the content first)
-    slopcheck https://example.com/article
+    python3 cli/slopcheck.py https://example.com/article
 
     # Choose provider and model
-    slopcheck --provider anthropic --model claude-opus-4-7 article.md
-    slopcheck --provider openai --model gpt-5.5 article.md
-    slopcheck --provider google --model gemini-3.1-pro-preview article.md
+    python3 cli/slopcheck.py --provider anthropic --model claude-opus-4-7 article.md
+    python3 cli/slopcheck.py --provider openai --model gpt-5.5 article.md
+    python3 cli/slopcheck.py --provider google --model gemini-3.1-pro-preview article.md
 
     # Override the API key (default: read from env vars ANTHROPIC_API_KEY,
     # OPENAI_API_KEY, or GOOGLE_API_KEY based on provider)
-    slopcheck --api-key sk-ant-... article.md
+    python3 cli/slopcheck.py --api-key sk-ant-... article.md
 
     # Choose detector mode
-    slopcheck --mode full-response article.md   # default: artifact
-    slopcheck --mode artifact article.md
+    python3 cli/slopcheck.py --mode full-response article.md   # default: artifact
+    python3 cli/slopcheck.py --mode artifact article.md
 
     # Save output to file
-    slopcheck article.md --output analysis.md
+    python3 cli/slopcheck.py article.md --output analysis.md
 
-Single dependency: the `requests` library (or use `--use-urllib` for
-stdlib-only mode). No build step needed; this is a single-file CLI.
+Requires Python 3.9 or later and only the Python standard library.
+No build step or global command is created; run from the repository root.
 """
 
 from __future__ import annotations
@@ -598,11 +598,11 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog=(
             "Examples:\n"
-            "  slopcheck article.md\n"
-            "  cat article.md | slopcheck\n"
-            "  slopcheck https://example.com/article\n"
-            "  slopcheck --provider anthropic --model claude-opus-4-7 article.md\n"
-            "  slopcheck --mode full-response chat-transcript.md\n\n"
+            "  python3 cli/slopcheck.py article.md\n"
+            "  cat article.md | python3 cli/slopcheck.py\n"
+            "  python3 cli/slopcheck.py https://example.com/article\n"
+            "  python3 cli/slopcheck.py --provider anthropic --model claude-opus-4-7 article.md\n"
+            "  python3 cli/slopcheck.py --mode full-response chat-transcript.md\n\n"
             "Set API keys via env vars: ANTHROPIC_API_KEY, OPENAI_API_KEY, GOOGLE_API_KEY.\n"
             "Or pass --api-key on the command line.\n"
         ),
@@ -664,7 +664,7 @@ def main(argv: list[str] | None = None) -> int:
     model = args.model or PROVIDERS[args.provider]["default_model"]
     if not any(m["id"] == model for m in PROVIDERS[args.provider]["models"]):
         eprint(f"Unknown model '{model}' for provider '{args.provider}'.")
-        eprint("Run 'slopcheck --list-models' to see available models.")
+        eprint("Run 'python3 cli/slopcheck.py --list-models' to see available models.")
         return 2
 
     api_key = resolve_api_key(args.provider, args.api_key)

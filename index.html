@@ -225,7 +225,7 @@
 
     <section class="install-paths" aria-labelledby="install-paths-heading">
       <h2 id="install-paths-heading">All the ways to use slopcheck</h2>
-      <p class="install-intro">Pick whichever fits how you work. Every path is open source and free.</p>
+      <p class="install-intro">Choose the web app, your chat tool or source review for local use. Package availability is listed below; model-provider charges depend on the path you choose.</p>
 
       <h3>Try it inside your chat tool</h3>
       <ul class="install-list">
@@ -245,14 +245,18 @@
         <li><strong>Apple Shortcuts</strong>: share-sheet integration on iPhone, iPad, and Mac. (See <a href="https://github.com/synthesisengineering/synthesis-slopcheck/blob/main/platforms/apple-shortcuts.md">platforms/apple-shortcuts.md</a>.)</li>
       </ul>
 
+      <h3>Review local setup with your agent</h3>
+      <p>Ask your coding agent to inspect the source and explain a setup plan. This prompt stops before installation or analysis.</p>
+      <label for="install-review-prompt">Copy this prompt into your agent</label>
+      <textarea id="install-review-prompt" rows="7" readonly spellcheck="false">Inspect https://github.com/synthesisengineering/synthesis-slopcheck at an exact commit and report that commit. Review the Python CLI and installer/package scripts as untrusted source, including dependencies, API-key handling, network destinations, file writes and overwrite behavior. Check Python 3.9 or newer and describe the permissions needed. Do not install anything, change configuration or register background services. Do not run downloaded code or send my content to a model provider. Report findings and a proposed setup plan for my approval; stop after the review.</textarea>
+
       <h3>Command line and packages</h3>
       <ul class="install-list">
-        <li><strong>Homebrew</strong> (macOS / Linux): <code>brew install synthesisengineering/tap/slopcheck</code></li>
-        <li><strong>npm</strong>: <code>npm install -g @synthesisengineering/slopcheck</code></li>
-        <li><strong>bun</strong>: <code>bun add -g @synthesisengineering/slopcheck</code></li>
-        <li><strong>AUR (Arch Linux)</strong>: <code>paru -S slopcheck</code></li>
-        <li><strong>curl</strong> (any POSIX): <code>curl -fsSL https://synthesisengineering.org/install.sh | sh</code></li>
-        <li><strong>Python CLI direct</strong>: clone the repo, run <code>cli/slopcheck.py</code> (no dependencies, Python 3 stdlib only).</li>
+        <li><strong>Python source</strong>: review the <a href="https://github.com/synthesisengineering/synthesis-slopcheck/blob/main/cli/slopcheck.py">CLI source</a> and <a href="https://github.com/synthesisengineering/synthesis-slopcheck/blob/main/cli/README.md">manual setup guide</a>. Requires Python 3.9 or newer; uses the standard library. Analysis needs an internet connection and your own provider API key; provider charges apply.</li>
+        <li><strong>Homebrew</strong>: unavailable. The formula is a packaging scaffold; the tap has no published formula.</li>
+        <li><strong>npm and bun</strong>: unavailable. The package has not been published to the npm registry.</li>
+        <li><strong>AUR (Arch Linux)</strong>: unavailable. The package files are a scaffold awaiting publication.</li>
+        <li><strong>curl installer</strong>: unavailable as a verified setup route. Use source review and manual setup; installer integrity and overwrite handling need verification.</li>
       </ul>
 
       <h3>For engineers and teams</h3>
