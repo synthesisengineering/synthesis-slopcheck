@@ -6,37 +6,38 @@ a piece of text and prints a structured analysis. BYOK (bring your own key).
 
 Usage:
     # Analyze a file
-    slopcheck article.md
+    python3 cli/slopcheck.py article.md
 
     # Analyze from stdin
-    cat article.md | slopcheck
+    cat article.md | python3 cli/slopcheck.py
 
     # Analyze a URL (fetches the content first)
-    slopcheck https://example.com/article
+    python3 cli/slopcheck.py https://example.com/article
 
     # Choose provider and model
-    slopcheck --provider anthropic --model claude-opus-4-7 article.md
-    slopcheck --provider openai --model gpt-5.5 article.md
-    slopcheck --provider google --model gemini-3.1-pro-preview article.md
+    python3 cli/slopcheck.py --provider anthropic --model claude-opus-4-7 article.md
+    python3 cli/slopcheck.py --provider openai --model gpt-5.5 article.md
+    python3 cli/slopcheck.py --provider google --model gemini-3.1-pro-preview article.md
 
     # Override the API key (default: read from env vars ANTHROPIC_API_KEY,
     # OPENAI_API_KEY, or GOOGLE_API_KEY based on provider)
-    slopcheck --api-key sk-ant-... article.md
+    python3 cli/slopcheck.py --api-key sk-ant-... article.md
 
     # Choose detector mode
-    slopcheck --mode full-response article.md   # default: artifact
-    slopcheck --mode artifact article.md
+    python3 cli/slopcheck.py --mode full-response article.md   # default: artifact
+    python3 cli/slopcheck.py --mode artifact article.md
 
     # Save output to file
-    slopcheck article.md --output analysis.md
+    python3 cli/slopcheck.py article.md --output analysis.md
 
-Single dependency: the `requests` library (or use `--use-urllib` for
-stdlib-only mode). No build step needed; this is a single-file CLI.
+Requires Python 3.9 or later and only the Python standard library.
+No build step or global command is created; run from the repository root.
 """
 
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import os
 import sys
@@ -597,12 +598,15 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
         description="slopcheck CLI: command-line slop detection for journalists, editors, writers, and readers.",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog=(
+            "Lifecycle (built release packages):\n"
+            "  slopcheck setup [--no-dormant-core]\n"
+            "  slopcheck synthesis <activate|deactivate|status|doctor|repair|update> [args]\n\n"
             "Examples:\n"
-            "  slopcheck article.md\n"
-            "  cat article.md | slopcheck\n"
-            "  slopcheck https://example.com/article\n"
-            "  slopcheck --provider anthropic --model claude-opus-4-7 article.md\n"
-            "  slopcheck --mode full-response chat-transcript.md\n\n"
+            "  python3 cli/slopcheck.py article.md\n"
+            "  cat article.md | python3 cli/slopcheck.py\n"
+            "  python3 cli/slopcheck.py https://example.com/article\n"
+            "  python3 cli/slopcheck.py --provider anthropic --model claude-opus-4-7 article.md\n"
+            "  python3 cli/slopcheck.py --mode full-response chat-transcript.md\n\n"
             "Set API keys via env vars: ANTHROPIC_API_KEY, OPENAI_API_KEY, GOOGLE_API_KEY.\n"
             "Or pass --api-key on the command line.\n"
         ),
@@ -654,8 +658,64 @@ def print_model_catalog():
             print(f"  {m['id']}: {m['label']} [{ctx_str} context]{default_marker}")
 
 
+LIFECYCLE_COMMANDS = ("activate", "deactivate", "status", "doctor", "repair", "update")
+
+
+def run_packaged_core(arguments: list[str]) -> int:
+    """Verify the bundled executable closure, then replace this process."""
+    parent = Path(__file__).resolve().parent
+    core = parent / "synthesis-core"
+    inventory_path = parent / "core-files.json"
+    try:
+        if core.is_symlink() or inventory_path.is_symlink():
+            raise ValueError("Core package must not contain symbolic links.")
+        inventory = json.loads(inventory_path.read_text())
+        if not isinstance(inventory, dict) or not inventory or "bin/synthesis" not in inventory:
+            raise ValueError("Core package inventory is incomplete.")
+        observed = {}
+        for path in core.rglob("*"):
+            if path.is_symlink():
+                raise ValueError("Core package must not contain symbolic links.")
+            if path.is_dir():
+                continue
+            if not path.is_file():
+                raise ValueError("Core package contains an unsupported file.")
+            observed[path.relative_to(core).as_posix()] = {
+                "sha256": hashlib.sha256(path.read_bytes()).hexdigest(),
+                "mode": path.stat().st_mode & 0o777,
+            }
+        if observed != inventory:
+            raise ValueError("Core package integrity check failed.")
+        launcher = core / "bin/synthesis"
+        if not launcher.is_file() or not os.access(launcher, os.X_OK):
+            raise ValueError("Verified core launcher is not executable.")
+        os.execv(str(launcher), [str(launcher), *arguments])
+    except (OSError, ValueError) as error:
+        print(f"Verified core launcher unavailable: {error}. Use an intact built release package.", file=sys.stderr)
+        return 2
+
+
 def main(argv: list[str] | None = None) -> int:
-    args = parse_args(argv if argv is not None else sys.argv[1:])
+    argv = argv if argv is not None else sys.argv[1:]
+    if argv[:1] == ["synthesis"]:
+        if argv[1:] in (["--help"], ["-h"]):
+            print("Usage: slopcheck synthesis <" + "|".join(LIFECYCLE_COMMANDS) + "> [args]\n"
+                  "Explicit access to the verified packaged core. Normal analysis never runs it.\n"
+                  "Example: slopcheck synthesis activate --profile full")
+            return 0
+        if len(argv) < 2 or argv[1] not in LIFECYCLE_COMMANDS:
+            print("Choose an allowed lifecycle operation: " + ", ".join(LIFECYCLE_COMMANDS), file=sys.stderr)
+            return 2
+        return run_packaged_core(argv[1:])
+    if argv[:1] == ["setup"]:
+        parser = argparse.ArgumentParser(description="Stage optional inert Synthesis assets; never activate hooks or services.")
+        parser.add_argument("--no-dormant-core", action="store_true")
+        setup = parser.parse_args(argv[1:])
+        command = ["stage-core", "--for-tool", "slopcheck"]
+        if setup.no_dormant_core:
+            command.append("--no-dormant-core")
+        return run_packaged_core(command)
+    args = parse_args(argv)
 
     if args.list_models:
         print_model_catalog()
@@ -664,7 +724,7 @@ def main(argv: list[str] | None = None) -> int:
     model = args.model or PROVIDERS[args.provider]["default_model"]
     if not any(m["id"] == model for m in PROVIDERS[args.provider]["models"]):
         eprint(f"Unknown model '{model}' for provider '{args.provider}'.")
-        eprint("Run 'slopcheck --list-models' to see available models.")
+        eprint("Run 'python3 cli/slopcheck.py --list-models' to see available models.")
         return 2
 
     api_key = resolve_api_key(args.provider, args.api_key)

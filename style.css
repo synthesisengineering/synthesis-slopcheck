@@ -660,3 +660,77 @@ textarea:focus {
   .container { padding: 0 1rem; }
   .result-content { padding: 1rem 1.25rem; }
 }
+
+/* synthesis-installation:start */
+
+  .install-paths .installation-guide {
+    --guide-surface: #f6f3ec;
+    --guide-surface-raised: #fff;
+    --guide-border: rgba(29, 27, 25, 0.18);
+    --guide-copy: #262321;
+    --guide-muted: #655f59;
+    --guide-accent: var(--accent, #1e3a5f);
+    --guide-code: #171a24;
+    --guide-code-copy: #f6eddc;
+    color: var(--guide-copy);
+    min-width: 0;
+  }
+  .install-paths .installation-guide.dark {
+    --guide-surface: var(--ink, #211b25);
+    --guide-surface-raised: var(--ink, #211b25);
+    --guide-border: rgba(255, 253, 248, 0.22);
+    --guide-copy: #fffdf8;
+    --guide-muted: rgba(255, 253, 248, 0.78);
+    --guide-accent: var(--coral, #e28b72);
+    --guide-code: #15101c;
+    --guide-code-copy: #f3dfba;
+  }
+  .install-paths [hidden] { display: none !important; }
+  .install-paths .guide-intro p { margin: 0 0 1rem; }
+  .install-paths .path-label { color: var(--guide-accent); font-family: var(--font-mono, ui-monospace, monospace); font-weight: 700; }
+  .install-paths .path-note, .install-paths .catalog-note { font-size: 0.9rem; color: var(--guide-muted); }
+  .install-paths .profile-control { display: flex; align-items: center; flex-wrap: wrap; gap: 0.75rem; margin: 1.5rem 0; }
+  .install-paths label { font-weight: 700; }
+  .install-paths .core-option { display: flex; align-items: center; gap: .65rem; margin-block: 1rem; }
+  .install-paths .core-option input { width: 1.2rem; height: 1.2rem; }
+  .install-paths select { max-width: 100%; min-height: 44px; padding: 0.55rem 2rem 0.55rem 0.75rem; color: var(--guide-copy); background: var(--guide-surface); border: 1px solid var(--guide-border); font: inherit; }
+  .install-paths .channel-tabs { display: flex; flex-wrap: wrap; gap: 0.4rem; margin: 0 0 1rem; }
+  .install-paths button { min-height: 44px; padding: 0.55rem 0.9rem; font: inherit; font-size: 0.88rem; font-weight: 700; border: 1px solid var(--guide-border); cursor: pointer; }
+  .install-paths .channel-tabs button { color: var(--guide-copy); background: var(--guide-surface); }
+  .install-paths .channel-tabs button[aria-selected='true'] { color: var(--guide-surface-raised); background: var(--guide-accent); border-color: var(--guide-accent); }
+  .install-paths button:focus-visible, .install-paths select:focus-visible, .install-paths code:focus-visible, .install-paths .channel-panel:focus-visible, .install-paths summary:focus-visible { outline: 3px solid var(--guide-accent); outline-offset: 3px; }
+  .install-paths .profile-panel { margin-top: 1.5rem; min-width: 0; }
+  .install-paths .profile-title { font-size: 1.1rem; margin: 0 0 0.75rem; color: var(--guide-copy); }
+  .install-paths .channel-panel { min-width: 0; margin-bottom: 1rem; padding: clamp(1rem, 3vw, 2rem); background: var(--guide-surface-raised); border: 1px solid var(--guide-border); }
+  .install-paths h3, .install-paths h4 { color: var(--guide-copy); }
+  .install-paths h4 { font-size: 1.15rem; margin: 0 0 0.8rem; }
+  .install-paths .channel-panel > p { color: var(--guide-muted); }
+  .install-paths .channel-panel p:last-child { margin-bottom: 0; }
+  .install-paths .availability { font-weight: 700; }
+  .install-paths .copy-block { margin-top: 1.25rem; background: var(--guide-code); border: 1px solid var(--guide-border); }
+  .install-paths pre { margin: 0; overflow: auto; }
+  .install-paths pre > code { display: block; padding: 1.1rem; color: var(--guide-code-copy); font-family: var(--font-mono, ui-monospace, monospace); font-size: 0.79rem; line-height: 1.7; overflow-wrap: anywhere; white-space: pre-wrap; }
+  .install-paths .prompt-block pre { max-height: 25rem; }
+  .install-paths .copy-actions { display: flex; flex-wrap: wrap; gap: 0.5rem; padding: 0.75rem; border-top: 1px solid var(--guide-border); }
+  .install-paths .copy-actions button { color: var(--guide-code-copy); background: transparent; border-color: currentColor; }
+  .install-paths .copy-actions button:hover { color: var(--guide-code); background: var(--guide-code-copy); }
+  .install-paths .copy-status { min-height: 1.6em; margin: 0.6rem 0; font-size: 0.9rem; color: var(--guide-copy); }
+  .install-paths p code { color: inherit; font-family: var(--font-mono, ui-monospace, monospace); font-size: 0.92em; }
+  .install-paths .digest { overflow-wrap: anywhere; }
+  .install-paths a { color: inherit; text-decoration-thickness: 1px; text-underline-offset: 0.18em; }
+  .install-paths .installation-result { margin-top: 1.5rem; padding: clamp(1rem, 3vw, 2rem); background: var(--guide-surface); border: 1px solid var(--guide-border); }
+  .install-paths .installation-result h3 { margin-top: 0; }
+  .install-paths .state-list { display: grid; gap: 0.9rem; }
+  .install-paths .state-list > div { display: grid; grid-template-columns: minmax(8.5rem, 1fr) 3fr; gap: 1rem; }
+  .install-paths dt { font-weight: 700; overflow-wrap: anywhere; }
+  .install-paths dd { margin: 0; }
+  .install-paths summary { min-height: 44px; cursor: pointer; font-weight: 700; padding: 0.65rem 0; }
+  .install-paths .organization-details { margin-top: 1rem; }
+  .install-paths .catalog-note { margin-top: 1rem; }
+  @media (max-width: 540px) {
+    .install-paths .channel-tabs { gap: 0.3rem; }
+    .install-paths .channel-tabs button { padding-inline: 0.7rem; }
+    .install-paths .state-list > div { grid-template-columns: 1fr; gap: 0.15rem; }
+  }
+
+/* synthesis-installation:end */

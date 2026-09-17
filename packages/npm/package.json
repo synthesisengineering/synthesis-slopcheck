@@ -1,5 +1,5 @@
 {
-  "name": "@synthesisengineering/slopcheck",
+  "name": "@synthesiswork/slopcheck",
   "version": "0.1.0",
   "description": "Open source slop detection. CLI wrapper for the synthesis engineering skill family. Slop detection, not just AI detection.",
   "license": "MIT",
@@ -26,11 +26,9 @@
   "files": [
     "bin/",
     "vendor/",
-    "README.md"
+    "README.md",
+    "LICENSE"
   ],
-  "scripts": {
-    "postinstall": "node bin/postinstall.js"
-  },
   "engines": {
     "node": ">=18"
   }

@@ -14,7 +14,7 @@ const PYTHON_CANDIDATES = ["python3", "python"];
 function findPython() {
   for (const candidate of PYTHON_CANDIDATES) {
     try {
-      const result = require("node:child_process").spawnSync(candidate, ["--version"], {
+      const result = require("node:child_process").spawnSync(candidate, ["-c", "import sys; sys.exit(0 if sys.version_info >= (3, 9) else 1)"], {
         stdio: "ignore",
       });
       if (result.status === 0) return candidate;
@@ -29,7 +29,7 @@ function main() {
   const python = findPython();
   if (!python) {
     console.error(
-      "slopcheck requires Python 3. Install it from https://www.python.org/downloads or your package manager, then try again."
+      "slopcheck requires Python 3.9 or later. Install it from https://www.python.org/downloads or your package manager, then try again."
     );
     process.exit(2);
   }
@@ -37,14 +37,20 @@ function main() {
   const scriptPath = path.join(__dirname, "..", "vendor", "slopcheck.py");
   if (!existsSync(scriptPath)) {
     console.error(
-      `slopcheck CLI not found at ${scriptPath}. Reinstall the package: npm install -g @synthesisengineering/slopcheck`
+      `slopcheck CLI not found at ${scriptPath}. Reinstall the package: npm install -g @synthesiswork/slopcheck`
     );
     process.exit(2);
   }
 
   const args = process.argv.slice(2);
   const child = spawn(python, [scriptPath, ...args], { stdio: "inherit" });
-  child.on("exit", (code) => process.exit(code ?? 0));
+  const forward = new Map(["SIGINT", "SIGTERM", "SIGHUP"].map(signal => [signal, () => child.kill(signal)]));
+  for (const [signal, handler] of forward) process.on(signal, handler);
+  child.on("exit", (code, signal) => {
+    for (const [name, handler] of forward) process.off(name, handler);
+    if (signal) process.kill(process.pid, signal);
+    else process.exit(code ?? 2);
+  });
   child.on("error", (err) => {
     console.error("Failed to start slopcheck:", err.message);
     process.exit(2);

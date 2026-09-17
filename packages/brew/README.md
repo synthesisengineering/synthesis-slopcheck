@@ -1,46 +1,19 @@
-# Homebrew tap for slopcheck
+# Homebrew distribution
 
-The formula at `Formula/slopcheck.rb` belongs in a separate repo: `github.com/synthesisengineering/homebrew-tap`.
+The release builder generates the formula from the exact published archive bytes. Run `scripts/build_distribution.py` with the reviewed thin Synthesis package to produce the source archive, SHA-256, formula and npm package together. The generated formula is committed to the public Homebrew tap only after archive publication and a real Homebrew installation test.
 
-## One-time setup
+The formula declares Python 3.12 and Git. Package installation adds the CLI; it does not run setup, change agent configuration or start services. `slopcheck setup` explicitly stages an inert shared core; `slopcheck setup --no-dormant-core` omits that staging. Neither option activates hooks or services. Ordinary analysis requires Python 3.9 or newer; optional core staging requires the shared launcher's supported runtime.
 
-1. **Create the tap repo.** On GitHub, create `synthesisengineering/homebrew-tap`. Must start with `homebrew-`.
-2. **Copy this formula** to that repo as `Formula/slopcheck.rb`.
-3. **Tag a release** in `synthesis-slopcheck`: `v0.1.0`. The formula's `url` points at the tarball GitHub auto-generates for that tag.
-4. **Compute the tarball SHA256** and replace `REPLACE_WITH_RELEASE_TARBALL_SHA256` in the formula:
+Published channels and exact commands are recorded at the [canonical downloads hub](https://synthesiswork.org/download/). There is no independently maintained formula template in this source repository.
 
-   ```sh
-   curl -sL https://github.com/synthesisengineering/synthesis-slopcheck/archive/refs/tags/v0.1.0.tar.gz | shasum -a 256
-   ```
+## Activate or inspect the shared core
 
-5. **Commit and push** the tap repo. The formula is now installable.
-
-## Users install via
+Built packages expose the core through an explicit command; no global `synthesis` executable or tool reinstall is needed:
 
 ```sh
-brew install synthesisengineering/tap/slopcheck
+slopcheck synthesis status --json
+slopcheck synthesis activate --profile full
+slopcheck synthesis deactivate
 ```
 
-Or, with the tap added once:
-
-```sh
-brew tap synthesisengineering/tap
-brew install slopcheck
-```
-
-## Verify
-
-```sh
-slopcheck --list-models
-which slopcheck
-brew test slopcheck
-```
-
-## Updating
-
-On each new slopcheck release:
-
-1. Tag the new version in `synthesis-slopcheck`.
-2. Bump the `url` in `Formula/slopcheck.rb` to point at the new tag.
-3. Update the `sha256` line with the new tarball checksum.
-4. Commit to `homebrew-tap`. Users get the update on `brew upgrade slopcheck`.
+The allowed operations are `activate`, `deactivate`, `status`, `doctor`, `repair`, and `update`; remaining arguments are forwarded unchanged. Use `slopcheck synthesis --help` without accessing the bundle. Activation follows the core's permission, ownership and client-restart checks. Deactivation restores an existing modular selection; it does not invent one. An unstaged or unverifiable installation is reported by the core, with its exit status preserved. Ordinary analysis and model listing do not invoke this bridge. The bundled core inventory is verified before either setup or a lifecycle operation.

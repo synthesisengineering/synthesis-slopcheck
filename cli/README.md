@@ -2,20 +2,22 @@
 
 Command-line slop detection for journalists, editors, writers, and engineers. Applies the synthesis-engineering open-source slop detection methodology (synthesis-content-quality v4.0 + synthesis-fact-checking v2.0) to text content and prints a structured analysis.
 
-## Install
+## Review and manual setup
 
-Single Python file, stdlib only (no dependencies). Python 3.9 or newer.
+Requires Python 3.9 or newer. The CLI is a single Python file using the standard library. Analysis fetches the current methodology from GitHub and sends content to your chosen model provider with your API key. It needs an internet connection; provider charges apply.
+
+Review [the source repository](https://github.com/synthesisengineering/synthesis-slopcheck), including `cli/slopcheck.py` and the package scripts. Record the exact commit you reviewed. A coding agent can inspect dependencies, network destinations, file writes and overwrite behavior, then propose setup for your approval. Source review does not require executing downloaded code.
+
+After approving the reviewed source, use it directly from the repository root:
 
 ```sh
-# Local install (run from the cli/ directory)
-chmod +x slopcheck.py
-ln -s "$(pwd)/slopcheck.py" /usr/local/bin/slopcheck
-
-# Or use directly without symlink
-./slopcheck.py article.md
+python3 cli/slopcheck.py --help
+python3 cli/slopcheck.py --list-models
 ```
 
-A pip-installable distribution is on the roadmap (`pip install synthesis-slopcheck` will install both the web-app static files and this CLI). For now, the single-file CLI above is the recommended install path.
+The examples below run from that same directory. They do not install a global command or change your agent configuration.
+
+Published package commands and direct release downloads are listed at the [canonical downloads hub](https://synthesiswork.org/download/). This repository does not provide a pip distribution. Built releases support `slopcheck setup` to stage optional inert core assets, or `slopcheck setup --no-dormant-core` to omit that staging. Source checkout setup requires a built, release-bound core launcher; analysis runs directly as shown above. Optional core staging requires Python 3.12–3.14 and Git. No agent hooks or services are activated by tool setup.
 
 ## Quick start
 
@@ -32,50 +34,50 @@ export GOOGLE_API_KEY=AIza...
 Analyze a file:
 
 ```sh
-slopcheck article.md
+python3 cli/slopcheck.py article.md
 ```
 
 Analyze from stdin:
 
 ```sh
-cat article.md | slopcheck
-pbpaste | slopcheck
+cat article.md | python3 cli/slopcheck.py
+pbpaste | python3 cli/slopcheck.py
 ```
 
 Analyze a URL (the CLI fetches the content first):
 
 ```sh
-slopcheck https://example.com/article
+python3 cli/slopcheck.py https://example.com/article
 ```
 
 Choose a specific model:
 
 ```sh
-slopcheck --provider anthropic --model claude-opus-4-7 article.md
-slopcheck --provider openai --model gpt-5.5 article.md
-slopcheck --provider google --model gemini-3.1-pro-preview article.md
+python3 cli/slopcheck.py --provider anthropic --model claude-opus-4-7 article.md
+python3 cli/slopcheck.py --provider openai --model gpt-5.5 article.md
+python3 cli/slopcheck.py --provider google --model gemini-3.1-pro-preview article.md
 ```
 
 Save output to a file:
 
 ```sh
-slopcheck article.md --output analysis.md
+python3 cli/slopcheck.py article.md --output analysis.md
 ```
 
 List available models:
 
 ```sh
-slopcheck --list-models
+python3 cli/slopcheck.py --list-models
 ```
 
 ## Detector modes
 
 ```sh
 # Artifact mode (default): the input is the produced artifact (an article, draft)
-slopcheck article.md
+python3 cli/slopcheck.py article.md
 
 # Full-response mode: the input includes the LLM's conversational wrapper
-slopcheck --mode full-response chat-transcript.md
+python3 cli/slopcheck.py --mode full-response chat-transcript.md
 ```
 
 ## Strategy
@@ -117,3 +119,15 @@ The CLI fetches the skill files from `raw.githubusercontent.com/synthesisenginee
 ## License
 
 MIT.
+
+## Activate or inspect the shared core
+
+Built packages expose the core through an explicit command; no global `synthesis` executable or tool reinstall is needed:
+
+```sh
+slopcheck synthesis status --json
+slopcheck synthesis activate --profile full
+slopcheck synthesis deactivate
+```
+
+The allowed operations are `activate`, `deactivate`, `status`, `doctor`, `repair`, and `update`; remaining arguments are forwarded unchanged. Use `slopcheck synthesis --help` without accessing the bundle. Activation follows the core's permission, ownership and client-restart checks. Deactivation restores an existing modular selection; it does not invent one. An unstaged or unverifiable installation is reported by the core, with its exit status preserved. Ordinary analysis and model listing do not invoke this bridge. The bundled core inventory is verified before either setup or a lifecycle operation.
