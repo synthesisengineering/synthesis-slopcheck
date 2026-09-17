@@ -81,6 +81,13 @@ class InstallationCopyTests(unittest.TestCase):
             self.assertIn(fragment, source)
         self.assertNotRegex(source, r'\b(?:fetch|eval)\(')
 
+    def test_generated_commands_keep_cdn_obfuscation_exclusions(self):
+        section = self.html.split('<!-- synthesis-installation:start -->')[1].split('<!-- synthesis-installation:end -->')[0]
+        commands = re.findall(r'<pre\b[^>]*>.*?</pre>', section, re.S)
+        protected = re.findall(r'<!--email_off-->\s*(<pre\b[^>]*>.*?</pre>)\s*<!--/email_off-->', section, re.S)
+        self.assertEqual(len(commands), 6)
+        self.assertEqual(protected, commands)
+
     def test_scoped_installation_styles_do_not_change_provider_controls(self):
         css = (ROOT / 'style.css').read_text().split('/* synthesis-installation:start */')[1]
         self.assertIn('.install-paths .installation-guide', css)
