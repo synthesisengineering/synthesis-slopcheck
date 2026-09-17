@@ -1,111 +1,92 @@
-"""Regression checks for user-facing installation guidance; no network or installs."""
-from html import unescape
+"""Static installation-surface checks; no network, providers or installation."""
 from html.parser import HTMLParser
 from pathlib import Path
 import re
-import subprocess
-import sys
 import unittest
 
 ROOT = Path(__file__).resolve().parents[1]
-GUIDANCE = (
-    "index.html", "README.md", "cli/README.md",
-    "packages/npm/README.md", "packages/brew/README.md", "packages/aur/README.md",
-)
-UNAVAILABLE_COMMANDS = re.compile(
-    r"\b(?:brew\s+(?:install|tap)\s+(?:synthesisengineering/tap(?:/slopcheck)?|slopcheck)"
-    r"|(?:npm\s+(?:install|i)|bun\s+add)\s+(?:-g\s+)?@synthesisengineering/slopcheck"
-    r"|(?:paru|yay)\s+-S\s+slopcheck"
-    r"|pip\s+install\s+synthesis-slopcheck)\b", re.I,
-)
-CURL_EXECUTION = re.compile(r"\bcurl\b[^\n<>]*\|\s*(?:sh|bash)\b", re.I)
 
 
 class InstallMarkup(HTMLParser):
     def __init__(self):
         super().__init__(convert_charrefs=True)
-        self.prompt = None
-        self._in_prompt = False
-        self.prompt_attrs = {}
+        self.ids = []
+        self.tabs = []
+        self.panels = []
+        self.prompts = []
+        self.references = []
+        self._prompt = None
 
     def handle_starttag(self, tag, attrs):
         attrs = dict(attrs)
-        if tag == "textarea" and attrs.get("id") == "install-review-prompt":
-            self.prompt = ""
-            self._in_prompt = True
-            self.prompt_attrs = attrs
-
-    def handle_endtag(self, tag):
-        if tag == "textarea":
-            self._in_prompt = False
+        if 'id' in attrs:
+            self.ids.append(attrs['id'])
+        if 'data-channel-tab' in attrs:
+            self.tabs.append(attrs['data-channel-tab'])
+        if 'data-channel-panel' in attrs:
+            self.panels.append(attrs['data-channel-panel'])
+        for name in ('data-copy-target', 'data-select-target', 'aria-controls'):
+            if name in attrs:
+                self.references.append(attrs[name])
+        if tag == 'code' and attrs.get('id', '').endswith('-copy-agent'):
+            self._prompt = ''
 
     def handle_data(self, data):
-        if self._in_prompt:
-            self.prompt += data
+        if self._prompt is not None:
+            self._prompt += data
+
+    def handle_endtag(self, tag):
+        if tag == 'code' and self._prompt is not None:
+            self.prompts.append(self._prompt)
+            self._prompt = None
 
 
 class InstallationCopyTests(unittest.TestCase):
-    def test_detector_rejects_known_unpublished_channels(self):
-        for command in (
-            "brew install synthesisengineering/tap/slopcheck",
-            "npm install -g @synthesisengineering/slopcheck",
-            "bun add -g @synthesisengineering/slopcheck",
-            "paru -S slopcheck", "pip install synthesis-slopcheck",
-        ):
-            with self.subTest(command=command):
-                self.assertIsNotNone(UNAVAILABLE_COMMANDS.search(command))
+    @classmethod
+    def setUpClass(cls):
+        cls.html = (ROOT / 'index.html').read_text()
+        cls.markup = InstallMarkup()
+        cls.markup.feed(cls.html)
 
-    def test_detector_allows_source_inspection_and_channel_status(self):
-        for copy in (
-            "Homebrew: unavailable. npm and bun: unpublished.",
-            "git clone https://github.com/synthesisengineering/synthesis-slopcheck.git",
-            "python3 cli/slopcheck.py --help",
-        ):
-            self.assertIsNone(UNAVAILABLE_COMMANDS.search(copy))
-            self.assertIsNone(CURL_EXECUTION.search(copy))
+    def test_six_current_channels_have_readable_markup(self):
+        expected = ['agent', 'curl', 'brew', 'npm', 'bun', 'source']
+        self.assertEqual(self.markup.tabs, expected)
+        self.assertEqual(self.markup.panels, expected)
+        section = self.html.split('<!-- synthesis-installation:start -->')[1].split('<!-- synthesis-installation:end -->')[0]
+        self.assertNotRegex(section, r'(?i)\b(?:paru|AUR)\b')
+        self.assertNotRegex(section, r'(?i)fallback needs repair|packaging scaffold|has not been published|unavailable\.')
+        self.assertIn('https://synthesiswork.org/download/', section)
 
-    def test_no_unpublished_install_commands_in_user_guidance(self):
-        for relative in GUIDANCE:
-            with self.subTest(path=relative):
-                self.assertIsNone(UNAVAILABLE_COMMANDS.search(unescape((ROOT / relative).read_text())))
+    def test_controls_are_scoped_unique_and_resolvable(self):
+        self.assertEqual(len(self.markup.ids), len(set(self.markup.ids)))
+        for target in self.markup.references:
+            self.assertIn(target, self.markup.ids)
+        self.assertIn('data-default-profile="slopcheck"', self.html)
+        self.assertIn('data-no-dormant-core', self.html)
+        self.assertIn('src="installation.js"', self.html)
 
-    def test_no_curl_to_shell_in_user_guidance(self):
-        self.assertIsNotNone(CURL_EXECUTION.search(
-            "curl -fsSL https://synthesisengineering.org/install.sh | sh"))
-        for relative in GUIDANCE:
-            with self.subTest(path=relative):
-                self.assertIsNone(CURL_EXECUTION.search(unescape((ROOT / relative).read_text())))
+    def test_agent_prompt_covers_review_explicit_setup_and_local_boundaries(self):
+        self.assertEqual(len(self.markup.prompts), 1)
+        prompt = self.markup.prompts[0]
+        for fragment in ('exact released tag', 'AST', 'dependency trees', 'BYOK', 'file writes', 'sandbox',
+                         'After my approval', 'slopcheck setup', '--no-dormant-core', 'postinstall',
+                         'outside client discovery', 'separate approval for service startup', 'outcome-verified'):
+            self.assertIn(fragment, prompt)
+        self.assertNotIn('stop after the review', prompt)
 
-    def test_agent_prompt_limits_work_to_source_review(self):
-        markup = InstallMarkup()
-        markup.feed((ROOT / "index.html").read_text())
-        self.assertIsNotNone(markup.prompt, "A source-review prompt must be available")
-        self.assertIn("readonly", markup.prompt_attrs)
-        prompt = markup.prompt.lower()
-        for boundary in ("inspect", "exact commit", "python", "network", "file writes",
-                         "do not install", "do not run", "approval"):
-            with self.subTest(boundary=boundary):
-                self.assertIn(boundary, prompt)
+    def test_controller_is_progressive_and_preserves_clipboard_fallback(self):
+        source = (ROOT / 'installation.js').read_text()
+        for fragment in ('dataset.enhanced', 'clipboard.writeText', 'Clipboard unavailable', 'ArrowRight',
+                         'ArrowLeft', 'Home', 'End', 'data-no-dormant-core', 'dataset.optoutCommand'):
+            self.assertIn(fragment, source)
+        self.assertNotRegex(source, r'\b(?:fetch|eval)\(')
 
-    def test_python_requirement_is_consistent(self):
-        for relative in ("index.html", "README.md", "cli/README.md", "packages/npm/README.md"):
-            with self.subTest(path=relative):
-                text = (ROOT / relative).read_text()
-                self.assertTrue("Python 3.9" in text, f"Python prerequisite missing in {relative}")
-                self.assertNotIn("Python 3.8", text)
-
-    def test_source_help_and_error_guidance_match_manual_install(self):
-        source = (ROOT / "cli/slopcheck.py").read_text()
-        self.assertNotIn("--use-urllib", source)
-        self.assertNotIn("requests` library", source)
-        help_run = subprocess.run([sys.executable, str(ROOT / "cli/slopcheck.py"), "--help"], capture_output=True, text=True, check=True)
-        examples = help_run.stdout.split("Examples:", 1)[1]
-        self.assertIn("python3 cli/slopcheck.py article.md", examples)
-        self.assertNotRegex(examples, r"(?m)^  (?:cat [^\n]+ \| )?slopcheck\b")
-        error = subprocess.run([sys.executable, str(ROOT / "cli/slopcheck.py"), "--model", "invalid-fixture-model"], capture_output=True, text=True)
-        self.assertEqual(error.returncode, 2)
-        self.assertIn("python3 cli/slopcheck.py --list-models", error.stderr)
+    def test_scoped_installation_styles_do_not_change_provider_controls(self):
+        css = (ROOT / 'style.css').read_text().split('/* synthesis-installation:start */')[1]
+        self.assertIn('.install-paths .installation-guide', css)
+        self.assertIn('overflow-wrap: anywhere', css)
+        self.assertNotRegex(css, r'(?m)^\s*(?:button|label|select)\s*\{')
 
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     unittest.main()

@@ -1,52 +1,15 @@
-# Publishing @synthesisengineering/slopcheck
+# Publishing SlopCheck
 
-One-time setup, then a release script you can re-run on every bump.
-
-## One-time setup
-
-1. **npm account.** Sign in to https://www.npmjs.com with Rajiv's account.
-2. **Organization.** Create the `synthesisengineering` org on npm (free for public packages).
-3. **2FA.** Enable 2FA on the npm account.
-4. **CLI auth.** Locally: `npm login --scope=@synthesisengineering --auth-type=web`.
-
-## Vendor the Python CLI before publishing
-
-The package vendors the CLI script. Refresh it on every release:
+Build from a reviewed release checkout. The build requires a thin Synthesis acquisition package generated from its exact tagged release; that package contains an integrity-bound bootstrap, not an activated skill catalog.
 
 ```sh
-cd packages/npm
-mkdir -p vendor
-cp ../../cli/slopcheck.py vendor/slopcheck.py
-chmod 0644 vendor/slopcheck.py
+python3 scripts/build_distribution.py --core-package /absolute/path/to/released-synthesis-package --output /absolute/path/to/new-release-directory
 ```
 
-(The `vendor/` directory is gitignored in the npm package source; the file is created at publish time and packed by npm.)
+The output contains the immutable CLI archive, generated curl installer, checksum record, Homebrew formula and npm package with vendored Python source and the thin core launcher. Never publish this source directory directly: it intentionally excludes generated vendor files.
 
-## Publish
+Run the complete fixture suite and actual npm/Bun consumer tests. Inspect `npm pack --dry-run --json` in the generated npm directory, then publish the packed artifact with public access after publication authorization. Bun consumes the same npm release. npm lifecycle scripts must remain absent: setup is explicit, and ordinary package installation must not activate agent integrations or contact a model provider.
 
-```sh
-cd packages/npm
-npm version patch    # or minor / major
-npm publish --access public
-```
+Upload the exact source archive, generated installer and checksum record to the matching versioned GitHub release before publishing a Homebrew formula. Verify the registry version and a fresh installation from each public channel. Do not mark a website route verified until its actual consumer install passes.
 
-For bun users specifically, no separate publish step. Bun pulls from the npm registry: `bun add -g @synthesisengineering/slopcheck` works once the npm publish lands.
-
-## Verify
-
-```sh
-npm view @synthesisengineering/slopcheck
-npx @synthesisengineering/slopcheck --list-models
-```
-
-## Versioning
-
-Track the same version as the slopcheck web app where reasonable. Breaking changes bump major. Per-provider behavior changes bump minor. Bug fixes bump patch.
-
-## Deprecation
-
-If a version has a security or correctness issue, deprecate it on the registry:
-
-```sh
-npm deprecate @synthesisengineering/slopcheck@<bad-version> "Use <good-version> instead"
-```
+AUR publication is excluded from the current release. Existing Arch packaging source is retained for the future account-availability work.
