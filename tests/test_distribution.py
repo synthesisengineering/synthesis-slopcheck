@@ -37,7 +37,7 @@ class DistributionTests(unittest.TestCase):
                                 "--output", str(self.release), "--core-package", str(self.core)],
                                capture_output=True, text=True)
         self.assertEqual(build.returncode, 0, build.stderr)
-        self.payload = self.release / "slopcheck-0.1.0.tar.gz"
+        self.payload = self.release / "slopcheck-0.1.1.tar.gz"
         fake = self.bin / "curl"
         fake.write_text("#!/bin/sh\nwhile [ $# -gt 0 ]; do\n"
                         "case \"$1\" in -o) shift; out=$1 ;; https://*) printf '%s' \"$1\" > \"$FIXTURE_URL\" ;; esac\n"
@@ -59,7 +59,7 @@ class DistributionTests(unittest.TestCase):
         result = self.install()
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertNotIn("/main/", (self.base / "requested-url").read_text())
-        self.assertIn("/v0.1.0/", (self.base / "requested-url").read_text())
+        self.assertIn("/v0.1.1/", (self.base / "requested-url").read_text())
         run = subprocess.run([str(self.target / "slopcheck"), "--list-models"], env=self.env,
                              text=True, capture_output=True)
         self.assertEqual(run.returncode, 0, run.stderr)
@@ -117,7 +117,7 @@ class DistributionTests(unittest.TestCase):
         self.assertEqual(pending.read_bytes(), before)
         self.assertFalse(receipt.exists())
         transport.write_text(original_transport)
-        payload = self.target / ".slopcheck-0.1.0/cli/slopcheck.py"
+        payload = self.target / ".slopcheck-0.1.1/cli/slopcheck.py"
         payload.write_text(payload.read_text() + "\n# preserved edit\n")
         self.assertNotEqual(self.install().returncode, 0)
         self.assertTrue(pending.exists())
@@ -136,6 +136,48 @@ class DistributionTests(unittest.TestCase):
         p = json.loads((ROOT / "packages/npm/package.json").read_text())
         self.assertFalse(set(p.get("scripts", {})) & {"preinstall", "install", "postinstall"})
 
+    def test_generated_brew_wrapper_passes_its_python_to_core_with_clean_path(self):
+        import re
+        import textwrap
+        python_bin = self.base / "brew python" / "bin"
+        python_bin.mkdir(parents=True)
+        python = python_bin / "python3.12"
+        python.symlink_to(sys.executable)
+        # Observe the environment at the real SlopCheck-to-core boundary. This
+        # controlled core performs no acquisition or activation.
+        launcher = self.core / "bin/synthesis"
+        launcher.write_text('#!/bin/sh\n'
+                            '[ "${SYNTHESIS_BOOTSTRAP_PYTHON:-}" = "$EXPECTED_BREW_PYTHON" ] || exit 42\n'
+                            'exec "$SYNTHESIS_BOOTSTRAP_PYTHON" -I -B -c '
+                            "'import json,os,sys;print(json.dumps({\"python\":os.environ[\"SYNTHESIS_BOOTSTRAP_PYTHON\"],\"args\":sys.argv[1:]}))' \"$@\"\n")
+        launcher.chmod(0o755)
+        output = self.base / "brew-release"
+        build = subprocess.run([sys.executable, str(ROOT / "scripts/build_distribution.py"),
+                                "--output", str(output), "--core-package", str(self.core)],
+                               capture_output=True, text=True)
+        self.assertEqual(build.returncode, 0, build.stderr)
+        formula = (output / "slopcheck.rb").read_text()
+        self.assertIn('depends_on "python@3.12"', formula)
+        self.assertIn('depends_on "git"', formula)
+        body = re.search(r'write <<~SHELL\n(.*?)\n    SHELL', formula, re.S)
+        self.assertIsNotNone(body)
+        wrapper = self.base / "brew-slopcheck"
+        script = textwrap.dedent(body.group(1)) + "\n"
+        script = script.replace('#{Formula["python@3.12"].opt_bin}', str(python_bin))
+        script = script.replace('#{libexec}', str(output / "npm/vendor"))
+        self.assertNotIn('#{', script)
+        wrapper.write_text(script)
+        wrapper.chmod(0o755)
+        env = dict(self.env, PATH="/usr/bin:/bin", EXPECTED_BREW_PYTHON=str(python))
+        env.pop("SYNTHESIS_BOOTSTRAP_PYTHON", None)
+        before = list(self.home.rglob("*"))
+        result = subprocess.run([str(wrapper), "setup", "--no-dormant-core"], env=env,
+                                capture_output=True, text=True)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(json.loads(result.stdout), {"python": str(python),
+                         "args": ["stage-core", "--for-tool", "slopcheck", "--no-dormant-core"]})
+        self.assertEqual(list(self.home.rglob("*")), before)
+
     def test_python_two_is_not_accepted_by_node_wrapper(self):
         node = shutil.which("node")
         if node is None:
@@ -151,7 +193,7 @@ class DistributionTests(unittest.TestCase):
 
     def test_installed_payload_edits_are_preserved(self):
         self.assertEqual(self.install().returncode, 0)
-        payload = self.target / ".slopcheck-0.1.0/cli/slopcheck.py"
+        payload = self.target / ".slopcheck-0.1.1/cli/slopcheck.py"
         payload.write_text(payload.read_text() + "\n# local edit\n")
         before = payload.read_bytes()
         self.assertNotEqual(self.install().returncode, 0)

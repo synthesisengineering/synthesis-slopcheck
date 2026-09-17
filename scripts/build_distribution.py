@@ -96,6 +96,7 @@ def main():
     libexec.install Dir["cli/*"]
     (bin/"slopcheck").write <<~SHELL
       #!/bin/sh
+      export SYNTHESIS_BOOTSTRAP_PYTHON="#{Formula["python@3.12"].opt_bin}/python3.12"
       exec "#{Formula["python@3.12"].opt_bin}/python3.12" "#{libexec}/slopcheck.py" "$@"
     SHELL
     chmod 0755, bin/"slopcheck"
