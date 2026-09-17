@@ -28,6 +28,9 @@ function artifact(route,repository,channel) {
 function packageRoute(distribution,route,channel,binary,setup,expectedRelease,repository,legacy=false) {
   if (!verified(route,channel)) return {ready:false};
   if (!version(route.release) || route.release!==expectedRelease) throw new Error(`Invalid ${channel} package release identity.`);
+  const formulaRevision = Object.hasOwn(route, 'formula_revision') ? route.formula_revision : 0;
+  if (!Number.isSafeInteger(formulaRevision) || formulaRevision < 0 || (channel !== 'brew' && Object.hasOwn(route, 'formula_revision'))) throw new Error('Invalid Homebrew formula revision.');
+  const installedVersion = route.release + (formulaRevision > 0 ? `_${formulaRevision}` : '');
   const packageName=route.package;
   if (typeof packageName!=='string') throw new Error(`Missing ${channel} package.`);
   if (channel==='brew') {
@@ -41,12 +44,21 @@ function packageRoute(distribution,route,channel,binary,setup,expectedRelease,re
   if (!https(route.evidence_url) || !Array.isArray(route.platforms) || !route.platforms.length || route.platforms.some(value=>!/^[a-z0-9-]+$/.test(value))) throw new Error(`Verified ${channel} route lacks platform or release evidence.`);
   const evidenceURLs=[`${repository}/releases/tag/v${route.release}`];
   if(channel!=='brew') evidenceURLs.push(`https://www.npmjs.com/package/${packageName}/v/${route.release}`,`https://registry.npmjs.org/${packageName}/${route.release}`);
-  if(!evidenceURLs.includes(route.evidence_url)) throw new Error(`Invalid ${channel} version-specific release evidence.`);
+  const tapEvidence = /^https:\/\/github\.com\/synthesisengineering\/homebrew-tap\/blob\/[a-f0-9]{40}\/Formula\/([a-z-]+)\.rb$/.exec(route.evidence_url);
+  const exactFormulaEvidence = channel === 'brew' && tapEvidence?.[1] === binary;
+  if ((!evidenceURLs.includes(route.evidence_url) && !exactFormulaEvidence) || (formulaRevision > 0 && !exactFormulaEvidence)) throw new Error(`Invalid ${channel} version-specific release evidence.`);
   if (legacy && (!Array.isArray(route.install) || ![1,2].includes(route.install.length) || route.install.join(' && ')!==`${prefixes[channel]} ${packageName} && synthesis setup --profile {profile}`)) throw new Error(`Invalid ${channel} install command.`);
+  const brewPackages=binary==='synthesis-console'?`oven-sh/bun/bun ${packageName}`:packageName;
+  const managerBin=channel==='npm'?`$(npm prefix -g)/bin/${binary}`:`$(bun pm bin -g)/${binary}`;
+  // Capture the manager-owned executable with a status-checked assignment so
+  // PATH shadows and failed directory queries cannot select another launcher.
   const command=channel==='brew'
-    ? `${prefixes[channel]} ${packageName} && test "$(brew list --versions --formula ${packageName})" = "${binary} ${route.release}" && "$(brew --prefix ${packageName})/bin/${binary}" ${setup}`
-    : `${prefixes[channel]} ${packageName}@${route.release} && ${binary} ${setup}`;
-  return {ready:true,command,release:route.release,platforms:route.platforms,evidenceUrl:route.evidence_url};
+    ? `${prefixes[channel]} ${brewPackages} && synthesis_package_prefix="$(brew --prefix ${packageName})" && test -d "$synthesis_package_prefix" && synthesis_package_prefix="$(cd "$synthesis_package_prefix" && pwd -P)" && test "\${synthesis_package_prefix##*/}" = "${installedVersion}" && "$synthesis_package_prefix/bin/${binary}" ${setup}`
+    : `${prefixes[channel]} ${packageName}@${route.release} && synthesis_package_bin="${managerBin}" && "$synthesis_package_bin" ${setup}`;
+  const admittedCommand = channel === 'bun'
+    ? `bun -e 'if (!Bun.semver.satisfies(Bun.version, ">=1.4.2")) throw Error("Bun 1.4.2 or newer is required")' && ${command}`
+    : command;
+  return {ready:true,command:admittedCommand,release:route.release,platforms:route.platforms,evidenceUrl:route.evidence_url};
 }
 export function installationRoutes(capabilities,component,options={}) {
   const definition=componentDefinitions[component];

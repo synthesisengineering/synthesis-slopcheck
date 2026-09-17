@@ -14,7 +14,7 @@ export function publicationFailures(capabilities,{mode='final',html,surface='eco
  if(typeof html!=='string'||!html.trim()) throw new Error('Rendered installation HTML is required.');
  const failures=[],bootstrap=capabilities.distribution?.bootstrap;
  const all=Object.keys(componentDefinitions),shown=surface==='slopcheck'?['slopcheck']:all;
- const code=[...html.matchAll(/<code\b[^>]*>([\s\S]*?)<\/code>/g)].map(match=>decode(match[1]).trim());
+ const code=[...html.matchAll(/<code\b(?:[^<>"']|"[^"]*"|'[^']*')*>([\s\S]*?)<\/code>/g)].map(match=>decode(match[1]).trim());
  const body=decode(html);
  const actualProfiles=[...html.matchAll(/data-profile-panel="([a-z-]+)"/g)].map(match=>match[1]);
  if(actualProfiles.length!==shown.length||shown.some(profile=>!actualProfiles.includes(profile))) failures.push('The rendered component inventory differs from this publication surface.');

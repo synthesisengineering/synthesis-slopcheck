@@ -198,54 +198,54 @@
   "distribution": {
     "schema_version": 1,
     "bootstrap": {
-      "url": "https://raw.githubusercontent.com/synthesisengineering/synthesis-skills/v4.101.0/onboard.sh",
-      "release": "4.101.0",
+      "url": "https://raw.githubusercontent.com/synthesisengineering/synthesis-skills/v4.101.1/onboard.sh",
+      "release": "4.101.1",
       "sha256": "4199dea8389fe401d8e1f27622875daf3bf1e5961c6a28194128a39037721261",
-      "source_url": "https://github.com/synthesisengineering/synthesis-skills/blob/v4.101.0/onboard.sh",
+      "source_url": "https://github.com/synthesisengineering/synthesis-skills/blob/v4.101.1/onboard.sh",
       "short_url": "https://synthesisengineering.org/onboard.sh",
-      "short_url_verified": false
+      "short_url_verified": true,
+      "archive_url": "https://github.com/synthesisengineering/synthesis-skills/releases/download/v4.101.1/synthesis-4.101.1.tar.gz",
+      "archive_sha256": "f5a26816afa836547191ae57a827df7dbe70ab361f9d1c51deabc653f238606d"
     },
     "channels": {
       "brew": {
-        "status": "pending",
+        "status": "verified",
         "package": "synthesisengineering/tap/synthesis",
         "install": [
           "brew install synthesisengineering/tap/synthesis",
           "synthesis setup --profile {profile}"
         ],
         "platforms": [
-          "macos",
-          "linux"
+          "macos-arm64"
         ],
-        "evidence_url": null
+        "evidence_url": "https://github.com/synthesisengineering/homebrew-tap/blob/19a1cb145079b5e7187f00bdd211b31e540af661/Formula/synthesis.rb",
+        "release": "4.101.1"
       },
       "npm": {
-        "status": "pending",
+        "status": "verified",
         "package": "@synthesiswork/synthesis",
         "install": [
           "npm install -g @synthesiswork/synthesis",
           "synthesis setup --profile {profile}"
         ],
         "platforms": [
-          "macos",
-          "linux",
-          "wsl"
+          "macos-arm64"
         ],
-        "evidence_url": null
+        "evidence_url": "https://registry.npmjs.org/@synthesiswork/synthesis/4.101.1",
+        "release": "4.101.1"
       },
       "bun": {
-        "status": "pending",
+        "status": "verified",
         "package": "@synthesiswork/synthesis",
         "install": [
           "bun add -g @synthesiswork/synthesis",
           "synthesis setup --profile {profile}"
         ],
         "platforms": [
-          "macos",
-          "linux",
-          "wsl"
+          "macos-arm64"
         ],
-        "evidence_url": null
+        "evidence_url": "https://registry.npmjs.org/@synthesiswork/synthesis/4.101.1",
+        "release": "4.101.1"
       }
     },
     "deferred_channels": {
@@ -258,8 +258,8 @@
       "@synthesiswork"
     ],
     "modular": {
-      "status": "pending",
-      "release": null,
+      "status": "verified",
+      "release": "4.101.1",
       "inventory_source": "skills/synthesis-onboarding/references/components.json",
       "skills": [
         "synthesis-absence-coordination",
@@ -338,19 +338,45 @@
         },
         "channels": {
           "curl": {
-            "status": "pending"
+            "status": "verified",
+            "release": "0.1.1",
+            "artifact_url": "https://github.com/synthesisengineering/synthesis-slopcheck/releases/download/v0.1.1/install.sh",
+            "sha256": "203d78f7d1f9f767c25654392451fa0d0668c0c9f49e47104acbf0e71aa138e4",
+            "source_url": "https://github.com/synthesisengineering/synthesis-slopcheck/tree/v0.1.1"
           },
           "brew": {
-            "status": "pending"
+            "status": "verified",
+            "package": "synthesisengineering/tap/slopcheck",
+            "release": "0.1.1",
+            "platforms": [
+              "macos-arm64"
+            ],
+            "evidence_url": "https://github.com/synthesisengineering/homebrew-tap/blob/19a1cb145079b5e7187f00bdd211b31e540af661/Formula/slopcheck.rb"
           },
           "npm": {
-            "status": "pending"
+            "status": "verified",
+            "package": "@synthesiswork/slopcheck",
+            "release": "0.1.1",
+            "platforms": [
+              "macos-arm64"
+            ],
+            "evidence_url": "https://github.com/synthesisengineering/synthesis-slopcheck/releases/tag/v0.1.1"
           },
           "bun": {
-            "status": "pending"
+            "status": "verified",
+            "package": "@synthesiswork/slopcheck",
+            "release": "0.1.1",
+            "platforms": [
+              "macos-arm64"
+            ],
+            "evidence_url": "https://github.com/synthesisengineering/synthesis-slopcheck/releases/tag/v0.1.1"
           },
           "source": {
-            "status": "pending"
+            "status": "verified",
+            "release": "0.1.1",
+            "artifact_url": "https://github.com/synthesisengineering/synthesis-slopcheck/releases/download/v0.1.1/slopcheck-0.1.1.tar.gz",
+            "sha256": "036cfce24da5c66948f5c4e38ff233020d299bd3ecba524a1903afa48f3f4306",
+            "source_url": "https://github.com/synthesisengineering/synthesis-slopcheck/tree/v0.1.1"
           }
         }
       },
@@ -363,19 +389,49 @@
         },
         "channels": {
           "curl": {
-            "status": "pending"
+            "status": "verified",
+            "release": "1.4.0",
+            "artifact_url": "https://github.com/synthesisengineering/synthesis-console/releases/download/v1.4.0/install.sh",
+            "sha256": "7e9d9a3b0babc6228296ba09b7b2a8b8453702aced5d9a31e28a4bbe6906f527",
+            "source_url": "https://github.com/synthesisengineering/synthesis-console/blob/v1.4.0/packages/install.sh",
+            "evidence_url": "https://github.com/synthesisengineering/synthesis-console/releases/tag/v1.4.0"
           },
           "brew": {
-            "status": "pending"
+            "status": "verified",
+            "package": "synthesisengineering/tap/synthesis-console",
+            "release": "1.4.0",
+            "platforms": [
+              "macos-arm64"
+            ],
+            "evidence_url": "https://github.com/synthesisengineering/homebrew-tap/blob/19a1cb145079b5e7187f00bdd211b31e540af661/Formula/synthesis-console.rb"
           },
           "npm": {
-            "status": "pending"
+            "status": "verified",
+            "release": "1.4.0",
+            "package": "@synthesiswork/console",
+            "platforms": [
+              "macos",
+              "linux"
+            ],
+            "evidence_url": "https://registry.npmjs.org/@synthesiswork/console/1.4.0"
           },
           "bun": {
-            "status": "pending"
+            "status": "verified",
+            "release": "1.4.0",
+            "package": "@synthesiswork/console",
+            "platforms": [
+              "macos",
+              "linux"
+            ],
+            "evidence_url": "https://registry.npmjs.org/@synthesiswork/console/1.4.0"
           },
           "source": {
-            "status": "pending"
+            "status": "verified",
+            "release": "1.4.0",
+            "artifact_url": "https://github.com/synthesisengineering/synthesis-console/releases/download/v1.4.0/synthesis-console-1.4.0.tar.gz",
+            "sha256": "9cea61507df525cdbf26c1f6935060b5c6e42661187f457288eb30ee486ed1fc",
+            "source_url": "https://github.com/synthesisengineering/synthesis-console/tree/v1.4.0",
+            "evidence_url": "https://github.com/synthesisengineering/synthesis-console/releases/tag/v1.4.0"
           }
         }
       },
@@ -388,19 +444,46 @@
         },
         "channels": {
           "curl": {
-            "status": "pending"
+            "status": "verified",
+            "release": "1.6.1",
+            "artifact_url": "https://github.com/synthesiswriting/ownwords/releases/download/v1.6.1/install.sh",
+            "sha256": "9b51657691f80150c96d140c0486c2074f05d52bcdc300400ed274039215d348",
+            "source_url": "https://github.com/synthesiswriting/ownwords/tree/v1.6.1"
           },
           "brew": {
-            "status": "pending"
+            "status": "verified",
+            "package": "synthesisengineering/tap/ownwords",
+            "release": "1.6.1",
+            "platforms": [
+              "macos-arm64"
+            ],
+            "evidence_url": "https://github.com/synthesisengineering/homebrew-tap/blob/19a1cb145079b5e7187f00bdd211b31e540af661/Formula/ownwords.rb",
+            "formula_revision": 1
           },
           "npm": {
-            "status": "pending"
+            "status": "verified",
+            "package": "ownwords",
+            "release": "1.6.1",
+            "platforms": [
+              "macos-arm64"
+            ],
+            "evidence_url": "https://github.com/synthesiswriting/ownwords/releases/tag/v1.6.1"
           },
           "bun": {
-            "status": "pending"
+            "status": "verified",
+            "package": "ownwords",
+            "release": "1.6.1",
+            "platforms": [
+              "macos-arm64"
+            ],
+            "evidence_url": "https://github.com/synthesiswriting/ownwords/releases/tag/v1.6.1"
           },
           "source": {
-            "status": "pending"
+            "status": "verified",
+            "release": "1.6.1",
+            "artifact_url": "https://github.com/synthesiswriting/ownwords/releases/download/v1.6.1/ownwords-1.6.1.tgz",
+            "sha256": "cbcb9cf6982a7ab2003970aec640b87a2a736c392a0452c00cf9d3f7942cc8da",
+            "source_url": "https://github.com/synthesiswriting/ownwords/tree/v1.6.1"
           }
         }
       }
