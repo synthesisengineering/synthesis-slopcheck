@@ -88,7 +88,6 @@ def main():
         raise ValueError("This is maintainer source, not a built release installer.")
     parser = argparse.ArgumentParser(description="Install the verified SlopCheck release; preserve unknown or edited files.")
     parser.add_argument("--prefix", default=os.environ.get("SLOPCHECK_INSTALL_DIR", str(Path.home() / ".local/bin")))
-    parser.add_argument("--no-dormant-core", action="store_true")
     args = parser.parse_args()
     prefix = Path(args.prefix).expanduser().absolute()
     directory(prefix)
@@ -140,7 +139,7 @@ def main():
                     if relative.as_posix() in files or str(relative) == ".":
                         raise ValueError("Release has a duplicate archive member.")
                     files[relative.as_posix()] = (archive.extractfile(member).read(), member.mode & 0o755)
-            if "cli/slopcheck.py" not in files or "cli/synthesis-core/bin/synthesis" not in files:
+            if "cli/slopcheck.py" not in files:
                 raise ValueError("Release is missing executable components.")
             expected = {name: (hashlib.sha256(data).hexdigest(), mode) for name, (data, mode) in files.items()}
             if release.exists():
@@ -181,9 +180,6 @@ def main():
             journal.unlink()
         finally:
             download.unlink(missing_ok=True)
-    command = [str(target), "setup"]
-    if args.no_dormant_core: command.append("--no-dormant-core")
-    run_child(command)
     print("Installed SlopCheck %s. No agent hooks or services were activated." % VERSION)
     if str(prefix) not in os.environ.get("PATH", "").split(os.pathsep):
         print("Add %s to PATH to use the slopcheck command." % prefix)

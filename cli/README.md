@@ -17,7 +17,19 @@ python3 cli/slopcheck.py --list-models
 
 The examples below run from that same directory. They do not install a global command or change your agent configuration.
 
-Published package commands and direct release downloads are listed at the [canonical downloads hub](https://synthesiswork.org/download/). This repository does not provide a pip distribution. Built releases support `slopcheck setup` to stage optional inert core assets, or `slopcheck setup --no-dormant-core` to omit that staging. Source checkout setup requires a built, release-bound core launcher; analysis runs directly as shown above. Optional core staging requires Python 3.12–3.14 and Git. No agent hooks or services are activated by tool setup.
+To install the `slopcheck` command instead, use one of the published channels. This repository does not provide a pip distribution. Installing changes no agent settings and starts no services.
+
+```sh
+# Homebrew
+brew install synthesisengineering/tap/slopcheck
+
+# npm, or Bun 1.4.2 or newer (both need Node.js 18 or newer)
+npm install -g @synthesiswork/slopcheck
+bun add -g @synthesiswork/slopcheck
+
+# The release's own installer: checks the archive's SHA-256, then installs to ~/.local/bin
+curl -fsSL https://github.com/synthesisengineering/synthesis-slopcheck/releases/latest/download/install.sh | sh
+```
 
 ## Quick start
 
@@ -119,15 +131,3 @@ The CLI fetches the skill files from `raw.githubusercontent.com/synthesisenginee
 ## License
 
 MIT.
-
-## Activate or inspect the shared core
-
-Built packages expose the core through an explicit command; no global `synthesis` executable or tool reinstall is needed:
-
-```sh
-slopcheck synthesis status --json
-slopcheck synthesis activate --profile full
-slopcheck synthesis deactivate
-```
-
-The allowed operations are `activate`, `deactivate`, `status`, `doctor`, `repair`, and `update`; remaining arguments are forwarded unchanged. Use `slopcheck synthesis --help` without accessing the bundle. Activation follows the core's permission, ownership and client-restart checks. Deactivation restores an existing modular selection; it does not invent one. An unstaged or unverifiable installation is reported by the core, with its exit status preserved. Ordinary analysis and model listing do not invoke this bridge. The bundled core inventory is verified before either setup or a lifecycle operation.
