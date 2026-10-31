@@ -10,6 +10,7 @@ import tempfile
 import unittest
 
 ROOT = Path(__file__).resolve().parents[1]
+VERSION = json.loads((ROOT / "packages/npm/package.json").read_text())["version"]
 
 
 class DistributionTests(unittest.TestCase):
@@ -21,23 +22,12 @@ class DistributionTests(unittest.TestCase):
         self.bin = self.base / "bin"
         self.bin.mkdir()
         self.target = self.home / ".local" / "bin"
-        self.payload = self.base / "payload.py"
-        self.payload.write_bytes((ROOT / "cli/slopcheck.py").read_bytes())
-        self.core = self.base / "core"
-        (self.core / "bin").mkdir(parents=True)
-        (self.core / "lib").mkdir()
-        (self.core / "lib/onboard.sh").write_text("#!/bin/sh\nexit 0\n")
-        (self.core / "lib/release.json").write_text(json.dumps({"schema_version": 1, "version": "4.101.0",
-            "commit": "a" * 40, "bootstrap_sha256": hashlib.sha256((self.core / "lib/onboard.sh").read_bytes()).hexdigest()}))
-        core_launcher = self.core / "bin/synthesis"
-        core_launcher.write_text('#!/bin/sh\nprintf "%s\\n" "$@" > "$HOME/core-setup-args"\n')
-        core_launcher.chmod(0o755)
         self.release = self.base / "built"
         build = subprocess.run([sys.executable, str(ROOT / "scripts/build_distribution.py"),
-                                "--output", str(self.release), "--core-package", str(self.core)],
+                                "--output", str(self.release)],
                                capture_output=True, text=True)
         self.assertEqual(build.returncode, 0, build.stderr)
-        self.payload = self.release / "slopcheck-0.1.1.tar.gz"
+        self.payload = self.release / f"slopcheck-{VERSION}.tar.gz"
         fake = self.bin / "curl"
         fake.write_text("#!/bin/sh\nwhile [ $# -gt 0 ]; do\n"
                         "case \"$1\" in -o) shift; out=$1 ;; https://*) printf '%s' \"$1\" > \"$FIXTURE_URL\" ;; esac\n"
@@ -59,18 +49,14 @@ class DistributionTests(unittest.TestCase):
         result = self.install()
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertNotIn("/main/", (self.base / "requested-url").read_text())
-        self.assertIn("/v0.1.1/", (self.base / "requested-url").read_text())
+        self.assertIn(f"/v{VERSION}/", (self.base / "requested-url").read_text())
         run = subprocess.run([str(self.target / "slopcheck"), "--list-models"], env=self.env,
                              text=True, capture_output=True)
         self.assertEqual(run.returncode, 0, run.stderr)
         self.assertIn("--provider anthropic", run.stdout)
-        self.assertEqual((self.home / "core-setup-args").read_text().splitlines(),
-                         ["stage-core", "--for-tool", "slopcheck"])
-        lifecycle = subprocess.run([str(self.target / "slopcheck"), "synthesis", "status", "--json"],
-                                   env=self.env, text=True, capture_output=True)
-        self.assertEqual(lifecycle.returncode, 0, lifecycle.stderr)
-        self.assertEqual((self.home / "core-setup-args").read_text().splitlines(), ["status", "--json"])
-
+        installed = sorted(p.relative_to(self.target / f".slopcheck-{VERSION}").as_posix()
+                           for p in (self.target / f".slopcheck-{VERSION}").rglob("*") if p.is_file())
+        self.assertEqual(installed, ["LICENSE", "README.md", "cli/slopcheck.py"])  # the tool alone, no bundled core
 
     def test_tampered_payload_never_installs(self):
         self.payload.write_text("print('tampered')\n")
@@ -117,7 +103,7 @@ class DistributionTests(unittest.TestCase):
         self.assertEqual(pending.read_bytes(), before)
         self.assertFalse(receipt.exists())
         transport.write_text(original_transport)
-        payload = self.target / ".slopcheck-0.1.1/cli/slopcheck.py"
+        payload = self.target / f".slopcheck-{VERSION}/cli/slopcheck.py"
         payload.write_text(payload.read_text() + "\n# preserved edit\n")
         self.assertNotEqual(self.install().returncode, 0)
         self.assertTrue(pending.exists())
@@ -136,47 +122,30 @@ class DistributionTests(unittest.TestCase):
         p = json.loads((ROOT / "packages/npm/package.json").read_text())
         self.assertFalse(set(p.get("scripts", {})) & {"preinstall", "install", "postinstall"})
 
-    def test_generated_brew_wrapper_passes_its_python_to_core_with_clean_path(self):
+    def test_generated_brew_wrapper_runs_the_cli_with_its_python(self):
         import re
         import textwrap
         python_bin = self.base / "brew python" / "bin"
         python_bin.mkdir(parents=True)
         python = python_bin / "python3.12"
         python.symlink_to(sys.executable)
-        # Observe the environment at the real SlopCheck-to-core boundary. This
-        # controlled core performs no acquisition or activation.
-        launcher = self.core / "bin/synthesis"
-        launcher.write_text('#!/bin/sh\n'
-                            '[ "${SYNTHESIS_BOOTSTRAP_PYTHON:-}" = "$EXPECTED_BREW_PYTHON" ] || exit 42\n'
-                            'exec "$SYNTHESIS_BOOTSTRAP_PYTHON" -I -B -c '
-                            "'import json,os,sys;print(json.dumps({\"python\":os.environ[\"SYNTHESIS_BOOTSTRAP_PYTHON\"],\"args\":sys.argv[1:]}))' \"$@\"\n")
-        launcher.chmod(0o755)
-        output = self.base / "brew-release"
-        build = subprocess.run([sys.executable, str(ROOT / "scripts/build_distribution.py"),
-                                "--output", str(output), "--core-package", str(self.core)],
-                               capture_output=True, text=True)
-        self.assertEqual(build.returncode, 0, build.stderr)
-        formula = (output / "slopcheck.rb").read_text()
+        formula = (self.release / "slopcheck.rb").read_text()
         self.assertIn('depends_on "python@3.12"', formula)
-        self.assertIn('depends_on "git"', formula)
+        self.assertNotIn('depends_on "git"', formula)
+        self.assertNotIn("SYNTHESIS_", formula)
         body = re.search(r'write <<~SHELL\n(.*?)\n    SHELL', formula, re.S)
         self.assertIsNotNone(body)
         wrapper = self.base / "brew-slopcheck"
         script = textwrap.dedent(body.group(1)) + "\n"
         script = script.replace('#{Formula["python@3.12"].opt_bin}', str(python_bin))
-        script = script.replace('#{libexec}', str(output / "npm/vendor"))
+        script = script.replace('#{libexec}', str(self.release / "npm/vendor"))
         self.assertNotIn('#{', script)
         wrapper.write_text(script)
         wrapper.chmod(0o755)
-        env = dict(self.env, PATH="/usr/bin:/bin", EXPECTED_BREW_PYTHON=str(python))
-        env.pop("SYNTHESIS_BOOTSTRAP_PYTHON", None)
-        before = list(self.home.rglob("*"))
-        result = subprocess.run([str(wrapper), "setup", "--no-dormant-core"], env=env,
+        result = subprocess.run([str(wrapper), "--list-models"], env=dict(self.env, PATH="/usr/bin:/bin"),
                                 capture_output=True, text=True)
         self.assertEqual(result.returncode, 0, result.stderr)
-        self.assertEqual(json.loads(result.stdout), {"python": str(python),
-                         "args": ["stage-core", "--for-tool", "slopcheck", "--no-dormant-core"]})
-        self.assertEqual(list(self.home.rglob("*")), before)
+        self.assertIn("--provider anthropic", result.stdout)
 
     def test_python_two_is_not_accepted_by_node_wrapper(self):
         node = shutil.which("node")
@@ -193,17 +162,15 @@ class DistributionTests(unittest.TestCase):
 
     def test_installed_payload_edits_are_preserved(self):
         self.assertEqual(self.install().returncode, 0)
-        payload = self.target / ".slopcheck-0.1.1/cli/slopcheck.py"
+        payload = self.target / f".slopcheck-{VERSION}/cli/slopcheck.py"
         payload.write_text(payload.read_text() + "\n# local edit\n")
         before = payload.read_bytes()
         self.assertNotEqual(self.install().returncode, 0)
         self.assertEqual(payload.read_bytes(), before)
 
-    def test_opt_out_and_missing_launcher_recovery(self):
-        result = subprocess.run(["sh", str(self.release / "install.sh"), "--no-dormant-core"],
-                                env=self.env, text=True, capture_output=True)
+    def test_missing_launcher_recovery(self):
+        result = self.install()
         self.assertEqual(result.returncode, 0, result.stderr)
-        self.assertIn("--no-dormant-core", (self.home / "core-setup-args").read_text())
         (self.target / "slopcheck").unlink()
         self.assertEqual(self.install().returncode, 0)
 
@@ -225,7 +192,10 @@ class DistributionTests(unittest.TestCase):
         result = subprocess.run([npm, "pack", "--json"], cwd=package,
                                 env=self.env, capture_output=True, text=True)
         self.assertEqual(result.returncode, 0, result.stderr)
-        archive = package / json.loads(result.stdout)[0]["filename"]
+        packed = json.loads(result.stdout)[0]
+        self.assertEqual(sorted(f["path"] for f in packed["files"]),
+                         ["LICENSE", "README.md", "bin/slopcheck.js", "package.json", "vendor/slopcheck.py"])
+        archive = package / packed["filename"]
         prefix = self.base / "npm-installed"
         result = subprocess.run([npm, "install", "--global", "--prefix", str(prefix),
                                  "--ignore-scripts", "--offline", "--no-audit", "--no-fund", str(archive)],
@@ -240,15 +210,9 @@ class DistributionTests(unittest.TestCase):
         result = subprocess.run([bun, "add", "--ignore-scripts", "--no-progress", str(archive)],
                                 cwd=consumer, env=self.env, capture_output=True, text=True)
         self.assertEqual(result.returncode, 0, result.stderr)
-        result = subprocess.run([str(consumer / "node_modules/.bin/slopcheck"), "setup", "--no-dormant-core"],
+        result = subprocess.run([str(consumer / "node_modules/.bin/slopcheck"), "--list-models"],
                                 env=self.env, capture_output=True, text=True)
         self.assertEqual(result.returncode, 0, result.stderr)
-        for binary in (prefix / "bin/slopcheck", consumer / "node_modules/.bin/slopcheck"):
-            result = subprocess.run([str(binary), "synthesis", "activate", "--profile", "full", "--path", "folder with spaces"],
-                                    env=self.env, capture_output=True, text=True)
-            self.assertEqual(result.returncode, 0, result.stderr)
-            self.assertEqual((self.home / "core-setup-args").read_text().splitlines(),
-                             ["activate", "--profile", "full", "--path", "folder with spaces"])
         self.assertFalse((self.home / ".claude").exists())
         self.assertFalse((self.home / ".codex").exists())
 
@@ -256,32 +220,33 @@ class DistributionTests(unittest.TestCase):
         builder = ROOT / "scripts/build_distribution.py"
         self.assertTrue(builder.is_file())
         output = self.base / "release"
-        result = subprocess.run([sys.executable, str(builder), "--output", str(output), "--core-package", str(self.core)],
+        result = subprocess.run([sys.executable, str(builder), "--output", str(output)],
                                 capture_output=True, text=True)
         self.assertEqual(result.returncode, 0, result.stderr)
         manifest = json.loads((output / "release.json").read_text())
         archive = output / manifest["archive"]["file"]
         self.assertEqual(hashlib.sha256(archive.read_bytes()).hexdigest(), manifest["archive"]["sha256"])
+        import tarfile
+        with tarfile.open(archive) as tar:
+            self.assertEqual(sorted(m.name for m in tar.getmembers()),
+                             [f"slopcheck-{VERSION}/{n}" for n in ("LICENSE", "README.md", "cli/slopcheck.py")])
+        self.assertNotIn("core_release", manifest)
+        self.assertEqual(sorted(p.name for p in (output / "npm/vendor").iterdir()), ["slopcheck.py"])
         self.assertEqual((output / "npm/vendor/slopcheck.py").read_bytes(), (ROOT / "cli/slopcheck.py").read_bytes())
         self.assertTrue((output / "npm/LICENSE").is_file())
         self.assertNotIn("REPLACE_WITH", (output / "slopcheck.rb").read_text())
         self.assertNotIn("REPLACE_WITH", (output / "PKGBUILD").read_text())
 
-    def test_explicit_setup_forwards_choice_without_provider_calls(self):
-        vendor = self.base / "vendor"
-        vendor.mkdir()
-        shutil.copyfile(ROOT / "cli/slopcheck.py", vendor / "slopcheck.py")
-        shutil.copytree(self.core, vendor / "synthesis-core")
-        shutil.copyfile(self.release / "npm/vendor/core-files.json", vendor / "core-files.json")
-        result = subprocess.run([sys.executable, str(vendor / "slopcheck.py"), "setup", "--no-dormant-core"],
+    def test_the_cli_offers_no_setup_or_lifecycle_commands(self):
+        result = subprocess.run([sys.executable, str(ROOT / "cli/slopcheck.py"), "--help"],
                                 env=self.env, text=True, capture_output=True)
         self.assertEqual(result.returncode, 0, result.stderr)
-        self.assertEqual((self.home / "core-setup-args").read_text().splitlines(),
-                         ["stage-core", "--for-tool", "slopcheck", "--no-dormant-core"])
+        for retired in ("slopcheck setup", "slopcheck synthesis", "dormant"):
+            self.assertNotIn(retired, result.stdout)
 
 
 class CurlCancellationTests(unittest.TestCase):
-    """Run actual installer bytes with disposable transport and setup workers."""
+    """Run actual installer bytes with a disposable transport worker."""
     def fixture(self, root, phase, mode='wait'):
         import io, shlex, tarfile
         home=root/'home';home.mkdir();fake=root/'fake';fake.mkdir()
@@ -297,7 +262,7 @@ class CurlCancellationTests(unittest.TestCase):
         worker.write_text(python_code)
         setup_code = python_code
         with tarfile.open(archive,'w:gz') as output:
-            for name,data in [('cli/slopcheck.py',setup_code.encode()),('cli/synthesis-core/bin/synthesis',b'fixture only\n')]:
+            for name,data in [('cli/slopcheck.py',setup_code.encode())]:
                 member=tarfile.TarInfo('slopcheck-9.8.7/'+name);member.size=len(data);member.mode=0o755
                 output.addfile(member,io.BytesIO(data))
         source=(ROOT/'packages/curl/install.sh').read_text()
@@ -308,11 +273,11 @@ class CurlCancellationTests(unittest.TestCase):
         curl.chmod(0o755)
         env=dict(os.environ,HOME=str(home),PATH=str(fake)+os.pathsep+os.environ['PATH'],
                  CURL_READY=str(root/'ready'),CURL_STOPPED=str(root/'stopped'),CURL_ARCHIVE=str(archive),CURL_CHILD_MODE=mode)
-        return ['sh',str(installer),'--prefix',str(prefix),'--no-dormant-core'],env,prefix
+        return ['sh',str(installer),'--prefix',str(prefix)],env,prefix
 
     def test_installer_forwards_and_reaps_each_incoming_signal(self):
         import signal,time
-        for phase in ('transport','setup'):
+        for phase in ('transport',):
             for sig in (signal.SIGINT,signal.SIGTERM,signal.SIGHUP):
                 with self.subTest(phase=phase,signal=sig),tempfile.TemporaryDirectory(prefix='slopcheck-cancel-') as tmp:
                     root=Path(tmp).resolve();command,env,prefix=self.fixture(root,phase)
@@ -329,7 +294,7 @@ class CurlCancellationTests(unittest.TestCase):
                         self.assertEqual((root/'stopped').read_text(),str(sig))
                         with self.assertRaises(ProcessLookupError):os.kill(child,0)
                         self.assertFalse(list(prefix.glob('.slopcheck-download-*')))
-                        self.assertEqual((prefix/'.slopcheck-install.json').exists(),phase=='setup')
+                        self.assertFalse((prefix/'.slopcheck-install.json').exists())
                     finally:
                         if child:
                             try:os.kill(child,signal.SIGTERM)
@@ -340,7 +305,7 @@ class CurlCancellationTests(unittest.TestCase):
 
     def test_installer_preserves_child_exit_and_signal(self):
         import signal
-        for phase in ('transport','setup'):
+        for phase in ('transport',):
             for mode,expected in [('exit',23),('signal',-signal.SIGTERM)]:
                 with self.subTest(phase=phase,mode=mode),tempfile.TemporaryDirectory(prefix='slopcheck-status-') as tmp:
                     command,env,prefix=self.fixture(Path(tmp).resolve(),phase,mode)
