@@ -76,7 +76,7 @@ export default {
     if (rlCount >= PER_SENDER_DAILY_LIMIT) {
       await replyWith(
         message,
-        `Slopcheck: you've hit the per-sender daily limit of ${PER_SENDER_DAILY_LIMIT}. Try again tomorrow, or use the web app at https://tools.synthesiswriting.org/slopcheck with your own API key for unlimited use.`
+        `Slopcheck: you've hit the per-sender daily limit of ${PER_SENDER_DAILY_LIMIT}. Try again tomorrow, or use the web app at https://tools.synthesiswriting.org/slopcheck with your own API key, subject to your provider's limits.`
       );
       return;
     }
