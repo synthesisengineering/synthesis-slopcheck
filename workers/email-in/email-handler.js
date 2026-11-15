@@ -166,7 +166,7 @@ function buildEmailReply(analysisText) {
     "This analysis was produced by the open source synthesis engineering skill family.",
     "Web app: https://tools.synthesiswriting.org/slopcheck",
     "Open source: https://github.com/synthesisengineering/synthesis-slopcheck",
-    "Privacy: this email and the analysis are not stored. Only a hashed sender-address rate-limit counter is kept, with daily TTL expiry.",
+    "Privacy: email content and analysis are not stored in this Worker's KV database. A hashed sender-address rate-limit counter expires after 90,000 seconds (25 hours). Email services and the analysis provider have their own logging and retention policies.",
     "Support the open source work: https://github.com/sponsors/rajivpant",
   ].join("\n");
 }
