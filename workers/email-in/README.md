@@ -31,14 +31,11 @@ Cloudflare Email Worker that turns email into a slopcheck submission. A user for
    # Function so the Function will accept the Worker's bypass of Turnstile.
    ```
 
-3. **Configure the hosted-tier Function to honor `X-Internal-Proxy-Key`.** Edit
-   `functions/api/hosted/analyze.js`
-   to skip Turnstile when this header matches the secret. (Currently the
-   Function checks Turnstile if `TURNSTILE_SECRET_KEY` is set; add a parallel
-   check that accepts the internal proxy key as an alternative.) This is a
-   small follow-up edit; for the initial deploy, set `TURNSTILE_SECRET_KEY`
-   to empty (which already disables Turnstile) until the proxy-key plumbing
-   is added.
+3. **Configure the shared internal-proxy secret on both services.** The
+   hosted-tier Function already accepts `X-Internal-Proxy-Key` when it exactly
+   matches its `INTERNAL_PROXY_KEY` secret. Set the same secret on this Worker
+   and the Pages project. Keep `TURNSTILE_SECRET_KEY` enabled for web requests;
+   the matching internal key is the email Worker's alternative authentication.
 
 4. **Deploy the Worker:**
 
@@ -52,6 +49,16 @@ Cloudflare Email Worker that turns email into a slopcheck submission. A user for
    - Save.
 
 6. **Smoke test.** From any email client, send a short paragraph to `check@<your-domain>`. You should receive a slopcheck analysis reply within a minute.
+
+## Local tests
+
+Run `npm test` from `workers/email-in` after installing its declared dependencies.
+The test entry loads `test/register.mjs`, which maps `cloudflare:email` to an
+explicit local interface stand-in and blocks unmocked `fetch` calls. It does not
+run Cloudflare, send email, or establish DMARC/delivery acceptance. The tests
+parse raw MIME with the installed `postal-mime` dependency and exercise the real
+hosted Function locally at the 200,000-character content boundary. Node 26.8.2
+was used for this check; the setup uses Node's `registerHooks` API.
 
 ## What the Worker stores
 

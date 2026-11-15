@@ -22,7 +22,8 @@
 // sender per UTC day) plus the same global budget kill switch as the hosted
 // tier. Sender addresses are HMAC-hashed before they touch KV, same as IPs.
 
-import PostalMime from "postal-mime";
+import PostalMime, { decodeWords } from "postal-mime";
+import { EmailMessage } from "cloudflare:email";
 
 const MAX_INPUT_CHARS = 200000;
 const PER_SENDER_DAILY_LIMIT = 10;
@@ -62,7 +63,7 @@ export default {
 
     const sender = (message.from || "").toLowerCase().trim();
     if (!sender) {
-      await replyWith(message, "Slopcheck couldn't read a sender address. Try again from a normal email account.");
+      message.setReject("Slopcheck couldn't read a sender address.");
       return;
     }
 
@@ -119,6 +120,7 @@ export default {
         model: "claude-haiku-4-5-20251001",
         systemPrompt: buildSystemPrompt(),
         userPrompt: buildUserPrompt(bodyText),
+        userContent: bodyText,
         maxTokens: 6000,
       });
     } catch (e) {
@@ -169,14 +171,14 @@ function buildEmailReply(analysisText) {
   ].join("\n");
 }
 
-async function callHostedTier({ env, provider, model, systemPrompt, userPrompt, maxTokens }) {
+async function callHostedTier({ env, provider, model, systemPrompt, userPrompt, userContent, maxTokens }) {
   const response = await fetch(SLOPCHECK_HOSTED_URL, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
       "X-Internal-Proxy-Key": env.INTERNAL_PROXY_KEY || "",
     },
-    body: JSON.stringify({ provider, model, systemPrompt, userPrompt, maxTokens }),
+    body: JSON.stringify({ provider, model, systemPrompt, userPrompt, userContent, maxTokens }),
   });
   if (!response.ok) {
     const text = await response.text();
@@ -187,13 +189,49 @@ async function callHostedTier({ env, provider, model, systemPrompt, userPrompt, 
   return data.text;
 }
 
+function headerText(value) {
+  return String(value || "").replace(/[\r\n]+/g, " ").trim();
+}
+
+function utf8Base64(value) {
+  return btoa(Array.from(encoder.encode(value), (byte) => String.fromCharCode(byte)).join(""));
+}
+
+function encodedSubject(value) {
+  // Fold at Unicode character boundaries; each encoded word stays below 75 bytes.
+  const chunks = [];
+  let chunk = "";
+  for (const char of value) {
+    if (encoder.encode(chunk + char).length > 42) {
+      chunks.push(chunk);
+      chunk = "";
+    }
+    chunk += char;
+  }
+  if (chunk) chunks.push(chunk);
+  return chunks.map((part) => `=?UTF-8?B?${utf8Base64(part)}?=`).join("\r\n ");
+}
+
 async function replyWith(message, body) {
   try {
-    await message.reply(
-      new Response(body, {
-        headers: { "Content-Type": "text/plain; charset=utf-8" },
-      })
-    );
+    const messageId = headerText(message.headers.get("Message-ID"));
+    const references = headerText(message.headers.get("References"));
+    const subject = decodeWords(headerText(message.headers.get("Subject"))) || "Slopcheck";
+    const headers = [
+      `From: ${headerText(message.to)}`,
+      `To: ${headerText(message.from)}`,
+      `Subject: ${encodedSubject(`Re: ${subject}`)}`,
+      `Date: ${new Date().toUTCString()}`,
+      "MIME-Version: 1.0",
+      "Content-Type: text/plain; charset=utf-8",
+      "Content-Transfer-Encoding: base64",
+    ];
+    if (messageId) headers.push(`In-Reply-To: ${messageId}`);
+    const replyReferences = [references, messageId].filter(Boolean).join(" ");
+    if (replyReferences) headers.push(`References: ${replyReferences}`);
+    const encodedBody = utf8Base64(body).match(/.{1,76}/g)?.join("\r\n") || "";
+    const raw = [...headers, "", encodedBody, ""].join("\r\n");
+    await message.reply(new EmailMessage(message.to, message.from, raw));
   } catch (e) {
     console.error("reply failed:", e);
   }
