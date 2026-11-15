@@ -23,12 +23,29 @@ jobs:
       - run: node --check packages/npm/bin/slopcheck.js
       - run: python3 -m compileall -q cli scripts
 
+  email-worker:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    defaults:
+      run:
+        working-directory: workers/email-in
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: workers/email-in/package-lock.json
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - run: npm test
+      - run: npx --no-install wrangler deploy --dry-run --outdir /tmp/email-worker-bundle
+
   ci:
     # The one check branch protection requires on main: it runs after every other job, even when one fails, and passes
     # only when all of them passed, so the matrix can change without touching the repository's settings.
     if: always()
-    needs: [consumers]
+    needs: [consumers, email-worker]
     runs-on: ubuntu-latest
     timeout-minutes: 2
     steps:
-      - run: test "${{ needs.consumers.result }}" = success
+      - run: test "${{ needs.consumers.result }}" = success && test "${{ needs.email-worker.result }}" = success

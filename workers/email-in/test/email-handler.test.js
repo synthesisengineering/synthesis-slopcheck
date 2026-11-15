@@ -2,6 +2,8 @@
 import { describe, it, afterEach } from "node:test";
 import assert from "node:assert/strict";
 import worker from "../email-handler.js";
+import PostalMime from "postal-mime";
+import { EmailMessage } from "cloudflare:email";
 
 const realFetch = globalThis.fetch;
 
@@ -24,15 +26,25 @@ function makeKV(seed = {}) {
 
 function makeMessage({ from = "ada@example.com", raw = null } = {}) {
   const replies = [];
+  const rejections = [];
   return {
     replies,
+    rejections,
     message: {
       from,
+      to: "check@synthesiswriting.org",
+      headers: new Headers({ Subject: "Draft", "Message-ID": "<original@example.com>" }),
+      setReject(reason) { rejections.push(reason); },
       raw:
         raw ??
         "From: ada@example.com\r\nContent-Type: text/plain\r\n\r\nHello world, analyze this.",
       async reply(response) {
-        replies.push(await response.text());
+        assert.ok(response instanceof EmailMessage, "reply requires EmailMessage, not Response");
+        assert.equal(response.from, this.to);
+        assert.equal(response.to, this.from);
+        const parsed = await new PostalMime().parse(response.raw);
+        assert.equal(parsed.inReplyTo, "<original@example.com>");
+        replies.push(parsed.text);
       },
     },
   };
@@ -53,12 +65,12 @@ describe("guards", () => {
     assert.equal(replies.length, 0);
   });
 
-  it("replies when the sender is unreadable", async () => {
+  it("rejects when the sender is unreadable", async () => {
     const kv = makeKV();
-    const { message, replies } = makeMessage({ from: "  " });
+    const { message, replies, rejections } = makeMessage({ from: "  " });
     await worker.email(message, makeEnv(kv), {});
-    assert.equal(replies.length, 1);
-    assert.match(replies[0], /couldn't read a sender/);
+    assert.equal(replies.length, 0);
+    assert.match(rejections[0], /couldn't read a sender/);
   });
 
   it("enforces the per-sender daily limit without calling the API", async () => {

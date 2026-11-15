@@ -34,7 +34,12 @@ wrangler pages secret put SLOPCHECK_OPENAI_KEY --project-name slopcheck
 wrangler pages secret put SLOPCHECK_GOOGLE_KEY --project-name slopcheck
 wrangler pages secret put TURNSTILE_SECRET_KEY --project-name slopcheck
 wrangler pages secret put IP_HASH_SALT --project-name slopcheck
+wrangler pages secret put INTERNAL_PROXY_KEY --project-name slopcheck
 ```
+
+`INTERNAL_PROXY_KEY` must match the email Worker's secret. The hosted Function
+accepts that key instead of Turnstile for the email channel; leave Turnstile
+enabled for web requests.
 
 The three API keys are **dedicated slopcheck keys**, isolated from Ragbot's keys. Create each at the provider console BEFORE this step:
 
@@ -60,7 +65,7 @@ Set in [`../wrangler.toml`](../wrangler.toml) and adjustable per environment:
 |-----|---------|---------|
 | `PER_IP_DAILY_LIMIT` | `5` | Analyses per IP per UTC day |
 | `GLOBAL_DAILY_BUDGET_USD` | `25` | Daily ceiling; kill switch flips at 95% |
-| `MAX_INPUT_CHARS` | `50000` | Per-request size cap (BYOK has none) |
+| `MAX_USER_CONTENT_CHARS` | `200000` | Hosted user-content cap; BYOK uses provider limits |
 | `ALLOWED_MODELS` | (see toml) | Comma-separated model id allowlist |
 
 ## Local dev
@@ -79,10 +84,12 @@ The Pages project deploys on every push to `main` of the GitHub repo. Functions 
 The frontend's `HOSTED_WORKER_BASE_URL` in [`../providers.js`](../providers.js) should point at the same-origin path:
 
 ```js
-const HOSTED_WORKER_BASE_URL = "/api/hosted";
+const HOSTED_WORKER_BASE_URL = "/slopcheck/api/hosted";
 ```
 
-(Currently `null` until the Function is live; switch when ready.)
+This is the current frontend value. The `tools.synthesiswriting.org` router
+strips `/slopcheck` before forwarding to the Pages project, whose Function route
+is `/api/hosted/analyze`.
 
 ## Verifying the safety layers in production
 
@@ -90,7 +97,7 @@ After first deploy, smoke-test each layer:
 
 1. **L7 — Turnstile.** Send a request without `X-Turnstile-Token`. Expect 403.
 2. **L6 — Model allowlist.** Send a request with `model: "claude-opus-4-7"`. Expect 400 with `allowed` list in the response.
-3. **L5 — Input size.** Send a request with 100,000-char `userPrompt`. Expect 413.
+3. **L5 — Input size.** Send a request whose user-content section exceeds `MAX_USER_CONTENT_CHARS` (200,000 by default). Expect 413.
 4. **L3 — Per-IP limit.** From one IP, send 6 valid requests. The 6th should return 429.
 5. **L4 — Kill switch.** Set `GLOBAL_DAILY_BUDGET_USD` to a tiny value like `0.05`, send a few requests, confirm the kill switch flips. Reset to the real value.
 6. **L1 — Provider caps.** Verify the monthly caps are set on each provider dashboard before any real traffic.
