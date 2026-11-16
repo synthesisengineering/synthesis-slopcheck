@@ -127,7 +127,7 @@ export default {
       console.error("Slopcheck hosted call failed:", e);
       await replyWith(
         message,
-        `Slopcheck encountered an error processing your email: ${e.message || "unknown error"}. Try again later or use the web app.`
+        "Slopcheck encountered an error processing your email. Try again later or use the web app with your own API key."
       );
       return;
     }
@@ -222,6 +222,7 @@ async function replyWith(message, body) {
       `To: ${headerText(message.from)}`,
       `Subject: ${encodedSubject(`Re: ${subject}`)}`,
       `Date: ${new Date().toUTCString()}`,
+      `Message-ID: <${crypto.randomUUID()}@${headerText(message.to).split('@').pop()}>`,
       "MIME-Version: 1.0",
       "Content-Type: text/plain; charset=utf-8",
       "Content-Transfer-Encoding: base64",

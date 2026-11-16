@@ -36,6 +36,8 @@ test('proper raw MIME reply keeps the reverse envelope, Unicode content and thre
  const parsed=await new PostalMime().parse(f.payloads[0].raw);
  assert.equal(parsed.subject,'Re: Résumé 😊');assert.equal(parsed.inReplyTo,'<source@example.net>');
  assert.equal(parsed.references,'<earlier@example.net> <source@example.net>');
+ assert.match(parsed.messageId,/^<[0-9a-f-]{36}@synthesiswriting\.org>$/);
+ assert.notEqual(parsed.messageId,parsed.inReplyTo);
  assert.equal(parsed.from.address,f.message.to);assert.equal(parsed.to[0].address,f.message.from);
  assert.match(parsed.text,/A useful café note\.\nשלום 😊/);
 });
@@ -57,6 +59,24 @@ test('header line breaks cannot inject an extra recipient header',async()=>{
 });
 test('local interface explicitly rejects a Response payload',async()=>{
  const f=fixture();await assert.rejects(f.message.reply(new Response('text')),/reply requires EmailMessage/);
+});
+test('local interface reproduces the observed missing outgoing Message-ID rejection',()=>{
+ assert.throws(()=>new EmailMessage('check@synthesiswriting.org','author@example.net','Date: Mon, 16 Nov 2026 19:55:26 GMT\r\nIn-Reply-To: <source@example.net>\r\n\r\nA reply.'),/no message-id set/);
+});
+test('success and provider-error replies receive distinct outgoing IDs',async()=>{
+ const f=fixture();await worker.email(f.message,f.env,{});
+ globalThis.fetch=async()=>new Response('Provider unavailable',{status:502});
+ await worker.email(f.message,f.env,{});
+ assert.equal(f.payloads.length,2);
+ const first=await new PostalMime().parse(f.payloads[0].raw);
+ const second=await new PostalMime().parse(f.payloads[1].raw);
+ assert.notEqual(first.messageId,second.messageId);
+ assert.match(second.messageId,/^<[0-9a-f-]{36}@synthesiswriting\.org>$/);
+ assert.equal(second.inReplyTo,'<source@example.net>');
+ assert.match(second.text,/encountered an error/);
+ assert.doesNotMatch(second.text,/Provider unavailable|hosted-tier|502/);
+ assert.ok(f.errors.some((error)=>error.includes('Provider unavailable')));
+ assert.ok(!f.errors.some((error)=>error.includes('reply failed')));
 });
 test('200,000-character content reaches the actual hosted size gate without prefix inflation',async()=>{
  const f=fixture();const content='x'.repeat(200000);f.message.raw='From: author@example.net\r\nContent-Type: text/plain\r\n\r\n'+content;
