@@ -291,7 +291,7 @@ class CurlCancellationTests(unittest.TestCase):
                         self.assertTrue((root/'ready').exists(),'worker readiness timeout')
                         child=int((root/'ready').read_text());parent.send_signal(sig)
                         self.assertEqual(parent.wait(timeout=5),-sig)
-                        self.assertEqual((root/'stopped').read_text(),str(sig))
+                        self.assertEqual((root/'stopped').read_text(),str(int(sig)))
                         with self.assertRaises(ProcessLookupError):os.kill(child,0)
                         self.assertFalse(list(prefix.glob('.slopcheck-download-*')))
                         self.assertFalse((prefix/'.slopcheck-install.json').exists())
