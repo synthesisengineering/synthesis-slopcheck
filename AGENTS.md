@@ -17,10 +17,11 @@ packages, a Chrome extension, chat and document integrations, and an email Worke
 - `cli/slopcheck.py`: the command-line tool. `packages/` holds its npm package,
   curl installer, and Homebrew and AUR recipes.
 - `scripts/build_distribution.py` builds the CLI's release files from the
-  checked-out bytes. `scripts/publish-site.sh` publishes the web page.
+  checked-out bytes, and `scripts/release.py` makes a CLI release with it.
+  `scripts/publish-site.sh` publishes the web page.
 - `workers/email-in/`: the email Worker, with its own `package.json` and tests.
-- `tests/`: the Python tests for the distribution, the installer and the page's
-  install section.
+- `tests/`: the Python tests for the distribution, the installer, the page's
+  install section and the release tool.
 
 ## Rules
 
@@ -66,12 +67,38 @@ repository's settings.
 - Every change reaches `main` through a pull request whose `ci` check passed.
 - A merge to `main` publishes and deploys nothing.
 - A CLI release changes the version in `packages/npm/package.json` in a pull
-  request. After it merges, `python3 scripts/build_distribution.py --output <a
-  new directory>` builds the release files from a clean checkout of `main`, and
-  `packages/npm/PUBLISHING.md` gives the publishing steps: the versioned GitHub
-  release, npm and the Homebrew formula. Each publication needs the owner's
-  approval.
+  request, with its `CHANGELOG.md` entry if the repository keeps one. After it
+  merges, the release tool makes the release, from a clean checkout of `main`:
+
+  ```bash
+  python3 scripts/release.py --output <a new directory> --dry-run   # the checks and the plan; changes nothing
+  python3 scripts/release.py --output <a new directory>             # the release
+  ```
+
+  It refuses, before anything is published, unless the tree is clean, HEAD is the
+  tip of GitHub's `main` with CI passed for it there, and GitHub has no tag and no
+  release for the version yet, nor a higher version tag. Then it works from a
+  fresh clone of the repository from GitHub at that commit: it builds the clone
+  with `scripts/build_distribution.py`, checks that the built files agree with
+  each other and with the clone's CLI, creates the GitHub release as a draft with
+  the archive, the installer and `release.json`, downloads each file back and
+  compares it with the build byte for byte, publishes the draft as latest (which
+  puts the tag `v<version>` on GitHub at that commit), and reads the tag and the
+  release back. It then opens the Homebrew tap's pull request that sets
+  `Formula/slopcheck.rb` to the built formula, which merges itself when the tap's
+  checks pass, waits for the merge and reads the formula back from the tap's
+  `main`. The notes are the `CHANGELOG.md` entry where the repository keeps one,
+  else the file `--notes-file` names, else GitHub writes them from the merged pull
+  requests. Nothing is public before the draft is published, and a run that stops
+  before then deletes its draft. A run publishes, so it runs only with the owner's
+  approval for that release; a release is complete only when the tool exits 0.
+- Publishing the npm package is a separate step, a public act the owner approves
+  each time: the release tool prints the commands for the package it built
+  (`packages/npm/PUBLISHING.md`) and never runs them. `tests/test_release.py`
+  tests the tool with every git, gh and build call faked; never tag, publish or
+  release by hand.
 - `bash scripts/publish-site.sh` runs the page's build check and publishes the
   repository root to the `slopcheck` Pages project's production branch. The email
   Worker deploys with `npm run deploy` in `workers/email-in`. Both are production
-  deploys, run only with the owner's approval for that deploy.
+  deploys, run only with the owner's approval for that deploy. The release tool
+  names both and runs neither.
