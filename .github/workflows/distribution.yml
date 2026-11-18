@@ -1,17 +1,38 @@
 name: Distribution
-on: [push, pull_request, workflow_dispatch]
+# The only merge gate: branch protection requires the `ci` job below on main. A branch's commits run once, through
+# their pull request, so each commit carries one `ci` result.
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: read  # every job's token reads the repository and nothing more; no job here uses a secret
 jobs:
   consumers:
     strategy:
       matrix:
         os: [macos-latest, ubuntu-latest]
         python: ['3.12', '3.13', '3.14']
+        include:
+          # The CLI's floor, which README.md promises: Python 3.9, as Apple ships it at /usr/bin/python3.
+          - os: macos-latest
+            python: apple
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
+        if: matrix.python != 'apple'
         with:
           python-version: ${{ matrix.python }}
+      - name: Apple's /usr/bin/python3 as python3
+        if: matrix.python == 'apple'
+        run: |
+          /usr/bin/python3 -c 'import sys; print(sys.version); assert sys.version_info[:2] == (3, 9), "Apple no longer ships Python 3.9: the floor this job checks has moved"'
+          mkdir -p "$RUNNER_TEMP/apple-python"
+          printf '#!/bin/sh\nexec /usr/bin/python3 "$@"\n' > "$RUNNER_TEMP/apple-python/python3"
+          chmod +x "$RUNNER_TEMP/apple-python/python3"
+          echo "$RUNNER_TEMP/apple-python" >> "$GITHUB_PATH"
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
