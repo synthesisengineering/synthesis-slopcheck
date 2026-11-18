@@ -1,10 +1,10 @@
 # Publishing SlopCheck
 
-`scripts/release.py` makes a release from a clean checkout of the merged `main`, and only with the owner's approval for that release:
+`scripts/cut_release.py` makes a release from a clean checkout of the merged `main`, and only with the owner's approval for that release. A real run waits for the principal's code at the synthesis guard (his `deploy_patterns`), and `--dry-run` does not.
 
 ```sh
-python3 scripts/release.py --output /absolute/path/to/new-release-directory --dry-run   # the checks and the plan; changes nothing
-python3 scripts/release.py --output /absolute/path/to/new-release-directory
+python3 scripts/cut_release.py --output /absolute/path/to/new-release-directory --dry-run   # the checks and the plan; changes nothing
+python3 scripts/cut_release.py --output /absolute/path/to/new-release-directory
 ```
 
 It refuses unless HEAD is the tip of GitHub's `main` with CI passed for it there, so the complete fixture suite and the actual npm and Bun consumer tests have passed for the commit it releases, and GitHub has no tag or release for the version yet. It builds a fresh clone of that commit from GitHub with `scripts/build_distribution.py`: the immutable CLI archive, the generated curl installer bound to that archive's SHA-256, a checksum record, the Homebrew formula and the npm package with the vendored Python CLI. Never publish this source directory directly: it intentionally excludes generated vendor files.

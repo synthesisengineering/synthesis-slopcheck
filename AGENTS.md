@@ -17,7 +17,7 @@ packages, a Chrome extension, chat and document integrations, and an email Worke
 - `cli/slopcheck.py`: the command-line tool. `packages/` holds its npm package,
   curl installer, and Homebrew and AUR recipes.
 - `scripts/build_distribution.py` builds the CLI's release files from the
-  checked-out bytes, and `scripts/release.py` makes a CLI release with it.
+  checked-out bytes, and `scripts/cut_release.py` makes a CLI release with it.
   `scripts/publish-site.sh` publishes the web page.
 - `workers/email-in/`: the email Worker, with its own `package.json` and tests.
 - `tests/`: the Python tests for the distribution, the installer, the page's
@@ -71,8 +71,8 @@ repository's settings.
   merges, the release tool makes the release, from a clean checkout of `main`:
 
   ```bash
-  python3 scripts/release.py --output <a new directory> --dry-run   # the checks and the plan; changes nothing
-  python3 scripts/release.py --output <a new directory>             # the release
+  python3 scripts/cut_release.py --output <a new directory> --dry-run   # the checks and the plan; changes nothing
+  python3 scripts/cut_release.py --output <a new directory>             # the release
   ```
 
   It refuses, before anything is published, unless the tree is clean, HEAD is the
@@ -91,10 +91,12 @@ repository's settings.
   else the file `--notes-file` names, else GitHub writes them from the merged pull
   requests. Nothing is public before the draft is published, and a run that stops
   before then deletes its draft. A run publishes, so it runs only with the owner's
-  approval for that release; a release is complete only when the tool exits 0.
+  approval for that release; a release is complete only when the tool exits 0. A
+  real run waits for the principal's code at the synthesis guard (his
+  `deploy_patterns`), and `--dry-run` does not.
 - Publishing the npm package is a separate step, a public act the owner approves
   each time: the release tool prints the commands for the package it built
-  (`packages/npm/PUBLISHING.md`) and never runs them. `tests/test_release.py`
+  (`packages/npm/PUBLISHING.md`) and never runs them. `tests/test_cut_release.py`
   tests the tool with every git, gh and build call faked; never tag, publish or
   release by hand.
 - `bash scripts/publish-site.sh` runs the page's build check and publishes the
